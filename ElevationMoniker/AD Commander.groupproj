@@ -1,0 +1,48 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{8041383C-6F48-435C-8F2B-FC133B91EDCB}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="..\adcmd.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="adcmd.com.dproj">
+            <Dependencies/>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="adcmd">
+        <MSBuild Projects="..\adcmd.dproj"/>
+    </Target>
+    <Target Name="adcmd:Clean">
+        <MSBuild Projects="..\adcmd.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="adcmd:Make">
+        <MSBuild Projects="..\adcmd.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="adcmd_com">
+        <MSBuild Projects="adcmd.com.dproj"/>
+    </Target>
+    <Target Name="adcmd_com:Clean">
+        <MSBuild Projects="adcmd.com.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="adcmd_com:Make">
+        <MSBuild Projects="adcmd.com.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="adcmd;adcmd_com"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="adcmd:Clean;adcmd_com:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="adcmd:Make;adcmd_com:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>

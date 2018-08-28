@@ -1,0 +1,27 @@
+REGEDIT4
+
+[HKEY_CLASSES_ROOT\ADUserInfo.Lync.ContactInfo]
+@="ADUserInfo.Lync.ContactInfo"
+
+[HKEY_CLASSES_ROOT\ADUserInfo.Lync.ContactInfo\CLSID]
+@="{50F4F4EF-8706-351B-937B-F38A6FAFDF69}"
+
+[HKEY_CLASSES_ROOT\CLSID\{50F4F4EF-8706-351B-937B-F38A6FAFDF69}]
+@="ADUserInfo.Lync.ContactInfo"
+
+[HKEY_CLASSES_ROOT\CLSID\{50F4F4EF-8706-351B-937B-F38A6FAFDF69}\InprocServer32]
+@="mscoree.dll"
+"ThreadingModel"="Both"
+"Class"="ADUserInfo.Lync.ContactInfo"
+"Assembly"="aduserinfo.lync, Version=1.2.0.0, Culture=neutral, PublicKeyToken=null"
+"RuntimeVersion"="v2.0.50727"
+
+[HKEY_CLASSES_ROOT\CLSID\{50F4F4EF-8706-351B-937B-F38A6FAFDF69}\InprocServer32\1.2.0.0]
+"Class"="ADUserInfo.Lync.ContactInfo"
+"Assembly"="aduserinfo.lync, Version=1.2.0.0, Culture=neutral, PublicKeyToken=null"
+"RuntimeVersion"="v2.0.50727"
+
+[HKEY_CLASSES_ROOT\CLSID\{50F4F4EF-8706-351B-937B-F38A6FAFDF69}\ProgId]
+@="ADUserInfo.Lync.ContactInfo"
+
+[HKEY_CLASSES_ROOT\CLSID\{50F4F4EF-8706-351B-937B-F38A6FAFDF69}\Implemented Categories\{62C8FE65-4EBB-45E7-B440-6E39B2CDBF29}]

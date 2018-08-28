@@ -1,0 +1,9 @@
+C:\Users\azhigadlo\Documents\Visual Studio 2008\Projects\aduserinfo.lync\aduserinfo.lync\obj\Debug\ResolveAssemblyReference.cache
+C:\Users\azhigadlo\Documents\Visual Studio 2008\Projects\aduserinfo.lync\aduserinfo.lync\bin\Debug\aduserinfo.lync.dll
+C:\Users\azhigadlo\Documents\Visual Studio 2008\Projects\aduserinfo.lync\aduserinfo.lync\bin\Debug\aduserinfo.lync.pdb
+C:\Users\azhigadlo\Documents\Visual Studio 2008\Projects\aduserinfo.lync\aduserinfo.lync\bin\Debug\aduserinfo.lync.tlb
+C:\Users\azhigadlo\Documents\Visual Studio 2008\Projects\aduserinfo.lync\aduserinfo.lync\bin\Debug\Microsoft.Lync.Model.dll
+C:\Users\azhigadlo\Documents\Visual Studio 2008\Projects\aduserinfo.lync\aduserinfo.lync\bin\Debug\Microsoft.Office.Uc.dll
+C:\Users\azhigadlo\Documents\Visual Studio 2008\Projects\aduserinfo.lync\aduserinfo.lync\bin\Debug\Microsoft.Lync.Model.xml
+C:\Users\azhigadlo\Documents\Visual Studio 2008\Projects\aduserinfo.lync\aduserinfo.lync\obj\Debug\aduserinfo.lync.dll
+C:\Users\azhigadlo\Documents\Visual Studio 2008\Projects\aduserinfo.lync\aduserinfo.lync\obj\Debug\aduserinfo.lync.pdb

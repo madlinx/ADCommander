@@ -1,0 +1,48 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{3910F98B-3F14-4C84-9ECE-C5AEF6E74EA0}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="ADCommander\adcmd.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="ElevationMoniker\adcmd.uac.dproj">
+            <Dependencies/>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="adcmd">
+        <MSBuild Projects="ADCommander\adcmd.dproj"/>
+    </Target>
+    <Target Name="adcmd:Clean">
+        <MSBuild Projects="ADCommander\adcmd.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="adcmd:Make">
+        <MSBuild Projects="ADCommander\adcmd.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="adcmd_uac">
+        <MSBuild Projects="ElevationMoniker\adcmd.uac.dproj"/>
+    </Target>
+    <Target Name="adcmd_uac:Clean">
+        <MSBuild Projects="ElevationMoniker\adcmd.uac.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="adcmd_uac:Make">
+        <MSBuild Projects="ElevationMoniker\adcmd.uac.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="adcmd;adcmd_uac"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="adcmd:Clean;adcmd_uac:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="adcmd:Make;adcmd_uac:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>

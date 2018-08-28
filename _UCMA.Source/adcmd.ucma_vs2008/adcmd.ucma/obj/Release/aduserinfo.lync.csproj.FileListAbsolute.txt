@@ -1,0 +1,16 @@
+C:\Users\azhigadlo\Documents\Visual Studio 2008\Projects\aduserinfo.lync\aduserinfo.lync\bin\Release\aduserinfo.lync.dll
+C:\Users\azhigadlo\Documents\Visual Studio 2008\Projects\aduserinfo.lync\aduserinfo.lync\bin\Release\aduserinfo.lync.pdb
+C:\Users\azhigadlo\Documents\Visual Studio 2008\Projects\aduserinfo.lync\aduserinfo.lync\bin\Release\Microsoft.Lync.Model.dll
+C:\Users\azhigadlo\Documents\Visual Studio 2008\Projects\aduserinfo.lync\aduserinfo.lync\bin\Release\Microsoft.Office.Uc.dll
+C:\Users\azhigadlo\Documents\Visual Studio 2008\Projects\aduserinfo.lync\aduserinfo.lync\bin\Release\Microsoft.Lync.Model.xml
+C:\Users\azhigadlo\Documents\Visual Studio 2008\Projects\aduserinfo.lync\aduserinfo.lync\obj\Release\ResolveAssemblyReference.cache
+C:\Users\azhigadlo\Documents\Visual Studio 2008\Projects\aduserinfo.lync\aduserinfo.lync\obj\Release\aduserinfo.lync.dll
+C:\Users\azhigadlo\Documents\Visual Studio 2008\Projects\aduserinfo.lync\aduserinfo.lync\obj\Release\aduserinfo.lync.pdb
+C:\Users\azhigadlo\Documents\Visual Studio 2008\Projects\aduserinfo.lync\aduserinfo.lync\bin\Release\aduserinfo.lync.tlb
+D:\Projects\ADCommander\UCMA.Source\adcmd.ucma_vs2008\aduserinfo.lync\bin\Release\aduserinfo.lync.dll
+D:\Projects\ADCommander\UCMA.Source\adcmd.ucma_vs2008\aduserinfo.lync\bin\Release\aduserinfo.lync.pdb
+D:\Projects\ADCommander\UCMA.Source\adcmd.ucma_vs2008\aduserinfo.lync\bin\Release\Microsoft.Office.Uc.dll
+D:\Projects\ADCommander\UCMA.Source\adcmd.ucma_vs2008\aduserinfo.lync\bin\Release\Microsoft.Lync.Model.xml
+D:\Projects\ADCommander\UCMA.Source\adcmd.ucma_vs2008\aduserinfo.lync\obj\Release\ResolveAssemblyReference.cache
+D:\Projects\ADCommander\UCMA.Source\adcmd.ucma_vs2008\aduserinfo.lync\obj\Release\aduserinfo.lync.dll
+D:\Projects\ADCommander\UCMA.Source\adcmd.ucma_vs2008\aduserinfo.lync\obj\Release\aduserinfo.lync.pdb

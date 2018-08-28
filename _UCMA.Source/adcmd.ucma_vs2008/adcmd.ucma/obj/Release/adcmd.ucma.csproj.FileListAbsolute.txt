@@ -1,0 +1,15 @@
+D:\Projects\ADCommander\UCMA.Source\adcmd.ucma_vs2008\aduserinfo.lync\bin\Release\adcmd.ucma.dll
+D:\Projects\ADCommander\UCMA.Source\adcmd.ucma_vs2008\aduserinfo.lync\bin\Release\adcmd.ucma.pdb
+D:\Projects\ADCommander\UCMA.Source\adcmd.ucma_vs2008\aduserinfo.lync\bin\Release\Microsoft.Office.Uc.dll
+D:\Projects\ADCommander\UCMA.Source\adcmd.ucma_vs2008\aduserinfo.lync\bin\Release\Microsoft.Lync.Model.xml
+D:\Projects\ADCommander\UCMA.Source\adcmd.ucma_vs2008\aduserinfo.lync\obj\Release\ResolveAssemblyReference.cache
+D:\Projects\ADCommander\UCMA.Source\adcmd.ucma_vs2008\aduserinfo.lync\obj\Release\adcmd.ucma.dll
+D:\Projects\ADCommander\UCMA.Source\adcmd.ucma_vs2008\aduserinfo.lync\obj\Release\adcmd.ucma.pdb
+D:\Projects\ADCommander\UCMA.Source\adcmd.ucma_vs2008\adcmd.ucma\obj\Release\ResolveAssemblyReference.cache
+D:\Projects\ADCommander\UCMA.Source\adcmd.ucma_vs2008\adcmd.ucma\obj\Release\adcmd.ucma.csproj.GenerateResource.Cache
+D:\Projects\ADCommander\UCMA.Source\adcmd.ucma_vs2008\adcmd.ucma\obj\Release\ADCommander.UCMA.Properties.Resources.resources
+D:\Projects\ADCommander\UCMA.Source\adcmd.ucma_vs2008\adcmd.ucma\bin\Release\adcmd.ucma.dll
+D:\Projects\ADCommander\UCMA.Source\adcmd.ucma_vs2008\adcmd.ucma\bin\Release\adcmd.ucma.pdb
+D:\Projects\ADCommander\UCMA.Source\adcmd.ucma_vs2008\adcmd.ucma\bin\Release\adcmd.ucma.tlb
+D:\Projects\ADCommander\UCMA.Source\adcmd.ucma_vs2008\adcmd.ucma\obj\Release\adcmd.ucma.dll
+D:\Projects\ADCommander\UCMA.Source\adcmd.ucma_vs2008\adcmd.ucma\obj\Release\adcmd.ucma.pdb
