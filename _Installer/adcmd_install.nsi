@@ -1,5 +1,4 @@
   !define APP_NAME "AD Commander"
-  !define PRODUCT_VERSION "0.3.9"
   
   !define WND_CLASS "TADCmd_MainForm"
   !define PROG_ID "ADCommander.UCMA"
@@ -20,7 +19,7 @@
   !include "WinVer.nsh"
   !include "FileFunc.nsh"
   !include "WinMessages.nsh"
-
+  
 ;--------------------------------
 ;General
   Var StartMenuFolder
@@ -30,22 +29,10 @@
   
   ;Name and file
   Name "${APP_NAME}"
-  OutFile "adcommander_${PRODUCT_VERSION}_32bit-64bit.exe"
   
-  LoadLanguageFile "${NSISDIR}\Contrib\Language files\English.nlf"
+  !getdllversion "..\Win32\Release\adcmd.exe" v
+  OutFile "adcommander_${v1}.${v2}.${v3}_32bit-64bit.exe"
   
-  ;--------------------------------
-  ;Version Information
-
-  VIProductVersion "1.0.0.0"
-  VIAddVersionKey /LANG=${LANG_ENGLISH} "ProductName" "Active DirectoryЃ Commander"
-  VIAddVersionKey /LANG=${LANG_ENGLISH} "Comments" "Compiled by Alexander Zhigadlo"
-  VIAddVersionKey /LANG=${LANG_ENGLISH} "CompanyName" "JSC Mozyr Oil Refinery"
-  VIAddVersionKey /LANG=${LANG_ENGLISH} "LegalTrademarks" "MadlinxЩ"
-  VIAddVersionKey /LANG=${LANG_ENGLISH} "LegalCopyright" "Copyright © 2018, JSC Mozyr Oil Refinery"
-  VIAddVersionKey /LANG=${LANG_ENGLISH} "FileDescription" "Active DirectoryЃ Commander"
-  VIAddVersionKey /LANG=${LANG_ENGLISH} "FileVersion" "${PRODUCT_VERSION}"
-
   ;Default installation folder
   InstallDir "$PROGRAMFILES\${APP_NAME}"
   
@@ -115,7 +102,11 @@
   !macroend
   
   Function .onInit
-    Call CheckOSVersion
+    ${IfNot} ${AtLeastWinVista}
+      MessageBox MB_OK|MB_ICONEXCLAMATION "ƒл€ установки приложени€ необходима операционна€ система Windows версии 6.0 и выше."
+      Quit
+    ${EndIf}
+    
     !insertmacro Init
     #Call CheckIfAlreadyInstalled
     ${If} ${RunningX64}
@@ -148,13 +139,6 @@
     ${EndIf}
   FunctionEnd
   
-  Function CheckOSVersion
-    ${IfNot} ${AtLeastWinVista}
-      MessageBox MB_OK|MB_ICONEXCLAMATION "ƒл€ установки приложени€ необходима операционна€ система Windows версии 6.0 и выше."
-      Quit
-    ${EndIf}
-  FunctionEnd
-  
   Function CheckIfAlreadyInstalled
     ReadRegStr $R0 HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" "UninstallString"
     IfFileExists $R0 +1 NotInstalled
@@ -177,7 +161,7 @@
     Var /GLOBAL DotNETInstallPath
 	Var /GLOBAL EXIT_CODE
     
-    StrCpy $RequiredVersion "3.57"
+    StrCpy $RequiredVersion "3.5"
     
     ReadRegStr $DotNETVersion HKLM "SOFTWARE\Microsoft\NET Framework Setup\NDP\v$RequiredVersion" "Version"
     ReadRegStr $DotNETInstallPath HKLM "SOFTWARE\Microsoft\NET Framework Setup\NDP\v$RequiredVersion" "InstallPath"
@@ -259,6 +243,22 @@
 ;Languages
  
   !insertmacro MUI_LANGUAGE "Russian"
+  !insertmacro MUI_LANGUAGE "English"
+  
+;--------------------------------
+;Version Information
+  !getdllversion "..\Win32\Release\adcmd.exe" v
+  
+  VIProductVersion "${v1}.${v2}.${v3}.${v4}"
+  VIAddVersionKey /LANG=${LANG_ENGLISH} "ProductVersion" "${v1}.${v2}.${v3}.${v4}"
+  VIAddVersionKey /LANG=${LANG_ENGLISH} "FileVersion" "${v1}.${v2}.${v3}.${v4}"
+  
+  VIAddVersionKey /LANG=${LANG_ENGLISH} "ProductName" "${APP_NAME}"
+  VIAddVersionKey /LANG=${LANG_ENGLISH} "Comments" "Compiled by Alexander Zhigadlo"
+  VIAddVersionKey /LANG=${LANG_ENGLISH} "CompanyName" "JSC Mozyr Oil Refinery"
+  VIAddVersionKey /LANG=${LANG_ENGLISH} "LegalTrademarks" "MadlinxЩ"
+  VIAddVersionKey /LANG=${LANG_ENGLISH} "LegalCopyright" "Copyright © 2018, JSC Mozyr Oil Refinery"
+  VIAddVersionKey /LANG=${LANG_ENGLISH} "FileDescription" "${APP_NAME}"
 
 ;--------------------------------
 ;Installer Sections
@@ -283,7 +283,7 @@ Section "Install" SecInstall
   ;Store installation folder
   WriteRegStr HKLM "Software\${APP_NAME}" "InstallPath" $INSTDIR
   
-  ; Write the uninstall keys for Windows
+  ;Write the uninstall keys for Windows
   ${If} ${RunningX64}
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\AD Commander" "DisplayIcon" "$INSTDIR\adcmd64.exe"
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\AD Commander" "DisplayName" "${APP_NAME} (64-bit)"
@@ -292,14 +292,19 @@ Section "Install" SecInstall
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\AD Commander" "DisplayName" "${APP_NAME}"
   ${EndIf}
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\AD Commander" "InstallLocation" "$INSTDIR" 
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\AD Commander" "DisplayVersion" "${PRODUCT_VERSION}"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\AD Commander" "Publisher" "JSC Mozyr Oil Refinery"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\AD Commander" "UninstallString" "$INSTDIR\Uninstall.exe"
+  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\AD Commander" "NoModify" 1
+  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\AD Commander" "NoRepair" 1
+  
+  ;Write the DisplayVersion
+  !getdllversion "..\Win32\Release\adcmd.exe" v
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\AD Commander" "DisplayVersion" "${v1}.${v2}.${v3}.${v4}"
+  
+  ;Write the EstimatedSize
   ${GetSize} "$INSTDIR" "/S=0K" $0 $1 $2
   IntFmt $0 "0x%08X" $0
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\AD Commander" "EstimatedSize" $0
-  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\AD Commander" "NoModify" 1
-  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\AD Commander" "NoRepair" 1
   
   ;Create uninstaller
   WriteUninstaller "$INSTDIR\Uninstall.exe"
