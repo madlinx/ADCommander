@@ -1,0 +1,333 @@
+1. Environment
+Behavior described here I've experienced and tested only on Windows 7 SP1 64-bit Home Premium with most recent updates installed with application built in Delphi 2009 also with latest updates applied. In no other system I've tried this.
+
+2. About the problem
+Default item hints that you can see on your screenshot doesn't come from VCL. In certain circumstances whose you just hit, are those hints shown by the system in a wrong, probably somehow cached way. The text of the last item you hovered is shown as a hint for the item you're just hovering. Here is the property configuration (just the important part; the rest I kept in default component values):
+
+ListView1.ShowHint := False;
+ListView1.OwnerData := True;
+ListView1.OwnerDraw := True;
+ListView1.ViewStyle := vsReport;
+The following events are handled:
+
+OnData
+OnDrawItem
+Actually, you don't even need to handle the OnDrawItem to simulate the problem. The hints are shown by the texts given to the items in the OnData event. I'm not able to trace it more deeper, since it seems there's no notification handler (nor even system notification) that might be related to the hints you see in the VCL, which is the reason why I'm suspecting the system.
+
+3. The way to solution
+Nothing what I've tried didn't fix the problem keeping your current property configuration. Here's a list of what I've tried:
+
+3.1. Remove the LVS_EX_LABELTIP style ?
+As a hot favorite and actually the first what I've checked was excluding the LVS_EX_LABELTIP from the list view's style in a hope the item hint showing will stop and you'll be able to implement your own custom hints through the OnInfoTip event. The problem is, that this style is not implemented anywhere in the list view control, thus it's not included in the list view style.
+
+3.2. Disable the OwnerDraw property ?
+Setting the OwnerDraw property to False actually resolves the issue (hints are then shown with correct item texts by the actual hovered item), but you've said you need to use owner drawing, so it's also not a solution for you.
+
+3.3. Remove the LVS_EX_INFOTIP style ?
+Removing the LVS_EX_INFOTIP style from the list view's style finally stopped showing of the item hints by the system, but also caused that the control stopped to send to the parent the tooltip notifications. As a consequence of this is the OnInfoTip event with its functionality cutted off. In this case you need to implement the hint handling completely by yourself. And that's what I've tried in the following code.
+
+4. Workaround
+I've decided to disable all the system hints of a list view by excluding of the LVS_EX_INFOTIP style and implementing own tooltip handling. So far I know at least about the following problems:
+
+when you use a regular Hint property and hover from an item with shortened caption to the empty area of a list view, the Hint is shown, but it doesn't hide unless you exit the control client rectangle or the hint show time interval elapses (even if you hover an item with shortened caption again). The problem is that I don't know how to specify the CursorRect for the THintInfo structure, so that you cover the whole client rectangle except items area rectangle.
+
+you must use the same item rectangle extents as you use in your owner drawing event method since the system doesn't know, where you're rendering the text of your items. So, another disadvantage is to keep this in sync.
+
+Here is the code of the main unit from a demo project, which you can download from here if you want:
+
+=====================================================================================
+
+unit Unit1;
+
+interface
+
+uses
+  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
+  Dialogs, ComCtrls, CommCtrl, StdCtrls;
+
+type
+  TRecord = record
+    Item: Integer;
+    SubItem1: string;
+    SubItem2: string;
+  end;
+
+type
+  TListView = class(ComCtrls.TListView)
+  private
+    procedure CMHintShow(var AMessage: TCMHintShow); message CM_HINTSHOW;
+  end;
+
+type
+  TForm1 = class(TForm)
+    ListView1: TListView;
+    procedure FormCreate(Sender: TObject);
+    procedure ListView1DrawItem(Sender: TCustomListView; Item: TListItem;
+      Rect: TRect; State: TOwnerDrawState);
+    procedure ListView1Data(Sender: TObject; Item: TListItem);
+  private
+    ModuleData: array of TRecord;
+  public
+    { Public declarations }
+  end;
+
+var
+  Form1: TForm1;
+
+implementation
+
+{$R *.dfm}
+
+procedure TForm1.FormCreate(Sender: TObject);
+var
+  ListColumn: TListColumn;
+begin
+  SetLength(ModuleData, 3);
+  ModuleData[0].Item := 0;
+  ModuleData[0].SubItem1 := '[0;0] Subitem caption';
+  ModuleData[0].SubItem2 := '[1;0] Subitem caption';
+  ModuleData[1].Item := 1;
+  ModuleData[1].SubItem1 := '[0;1] Subitem caption';
+  ModuleData[1].SubItem2 := '[1;1] Subitem caption';
+  ModuleData[2].Item := 2;
+  ModuleData[2].SubItem1 := '[0;2] This is a long subitem caption';
+  ModuleData[2].SubItem2 := '[0;2] This is even longer subitem caption';
+
+  ListView1.OwnerData := True;
+  ListView1.OwnerDraw := True;
+  ListView1.ViewStyle := vsReport;
+
+  ListView_SetExtendedListViewStyle(
+    ListView1.Handle,
+    ListView_GetExtendedListViewStyle(ListView1.Handle) and not LVS_EX_INFOTIP);
+
+  ListColumn := ListView1.Columns.Add;
+  ListColumn.Caption := 'Col. 1';
+  ListColumn.Width := 50;
+  ListColumn := ListView1.Columns.Add;
+  ListColumn.Caption := 'Col. 2';
+  ListColumn.Width := 50;
+  ListColumn := ListView1.Columns.Add;
+  ListColumn.Caption := 'Col. 3';
+  ListColumn.Width := 50;
+
+  ListView1.Items.Add;
+  ListView1.Items.Add;
+  ListView1.Items.Add;
+end;
+
+procedure TForm1.ListView1Data(Sender: TObject; Item: TListItem);
+begin
+  Item.Caption := IntToStr(ModuleData[Item.Index].Item);
+  Item.SubItems.Add(ModuleData[Item.Index].SubItem1);
+  Item.SubItems.Add(ModuleData[Item.Index].SubItem2);
+end;
+
+procedure TForm1.ListView1DrawItem(Sender: TCustomListView; Item: TListItem;
+  Rect: TRect; State: TOwnerDrawState);
+var
+  R: TRect;
+  S: string;
+  SubItem: Integer;
+  ListView: TListView;
+begin
+  ListView := TListView(Sender);
+
+  if (Item.SubItems[0] = '...') then
+  begin
+    ListView.Canvas.Brush.Color := clHighlight;
+    ListView.Canvas.Font.Color  := clHighlightText;
+  end
+  else
+  begin
+    ListView.Canvas.Brush.Color := ListView.Color;
+    ListView.Canvas.Font.Color  := ListView.Font.Color;
+  end;
+
+  for SubItem := 0 to ListView.Columns.Count - 1 do
+  begin
+    if ListView_GetSubItemRect(ListView.Handle, Item.Index, SubItem,
+      LVIR_LABEL, @R) then
+
+
+
+unit Unit1;
+
+interface
+
+uses
+  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
+  Dialogs, ComCtrls, CommCtrl, StdCtrls;
+
+type
+  TRecord = record
+    Item: Integer;
+    SubItem1: string;
+    SubItem2: string;
+  end;
+
+type
+  TListView = class(ComCtrls.TListView)
+  private
+    procedure CMHintShow(var AMessage: TCMHintShow); message CM_HINTSHOW;
+  end;
+
+type
+  TForm1 = class(TForm)
+    ListView1: TListView;
+    procedure FormCreate(Sender: TObject);
+    procedure ListView1DrawItem(Sender: TCustomListView; Item: TListItem;
+      Rect: TRect; State: TOwnerDrawState);
+    procedure ListView1Data(Sender: TObject; Item: TListItem);
+  private
+    ModuleData: array of TRecord;
+  public
+    { Public declarations }
+  end;
+
+var
+  Form1: TForm1;
+
+implementation
+
+{$R *.dfm}
+
+procedure TForm1.FormCreate(Sender: TObject);
+var
+  ListColumn: TListColumn;
+begin
+  SetLength(ModuleData, 3);
+  ModuleData[0].Item := 0;
+  ModuleData[0].SubItem1 := '[0;0] Subitem caption';
+  ModuleData[0].SubItem2 := '[1;0] Subitem caption';
+  ModuleData[1].Item := 1;
+  ModuleData[1].SubItem1 := '[0;1] Subitem caption';
+  ModuleData[1].SubItem2 := '[1;1] Subitem caption';
+  ModuleData[2].Item := 2;
+  ModuleData[2].SubItem1 := '[0;2] This is a long subitem caption';
+  ModuleData[2].SubItem2 := '[0;2] This is even longer subitem caption';
+
+  ListView1.OwnerData := True;
+  ListView1.OwnerDraw := True;
+  ListView1.ViewStyle := vsReport;
+
+  ListView_SetExtendedListViewStyle(
+    ListView1.Handle,
+    ListView_GetExtendedListViewStyle(ListView1.Handle) and not LVS_EX_INFOTIP);
+
+  ListColumn := ListView1.Columns.Add;
+  ListColumn.Caption := 'Col. 1';
+  ListColumn.Width := 50;
+  ListColumn := ListView1.Columns.Add;
+  ListColumn.Caption := 'Col. 2';
+  ListColumn.Width := 50;
+  ListColumn := ListView1.Columns.Add;
+  ListColumn.Caption := 'Col. 3';
+  ListColumn.Width := 50;
+
+  ListView1.Items.Add;
+  ListView1.Items.Add;
+  ListView1.Items.Add;
+end;
+
+procedure TForm1.ListView1Data(Sender: TObject; Item: TListItem);
+begin
+  Item.Caption := IntToStr(ModuleData[Item.Index].Item);
+  Item.SubItems.Add(ModuleData[Item.Index].SubItem1);
+  Item.SubItems.Add(ModuleData[Item.Index].SubItem2);
+end;
+
+procedure TForm1.ListView1DrawItem(Sender: TCustomListView; Item: TListItem;
+  Rect: TRect; State: TOwnerDrawState);
+var
+  R: TRect;
+  S: string;
+  SubItem: Integer;
+  ListView: TListView;
+begin
+  ListView := TListView(Sender);
+
+  if (Item.SubItems[0] = '...') then
+  begin
+    ListView.Canvas.Brush.Color := clHighlight;
+    ListView.Canvas.Font.Color  := clHighlightText;
+  end
+  else
+  begin
+    ListView.Canvas.Brush.Color := ListView.Color;
+    ListView.Canvas.Font.Color  := ListView.Font.Color;
+  end;
+
+  for SubItem := 0 to ListView.Columns.Count - 1 do
+  begin
+    if ListView_GetSubItemRect(ListView.Handle, Item.Index, SubItem,
+      LVIR_LABEL, @R) then
+    begin
+      ListView.Canvas.FillRect(R);
+      if (SubItem = 0) then
+        S := Item.Caption
+      else
+      begin
+        R.Left := R.Left + 6;
+        S := Item.SubItems[SubItem - 1];
+      end;
+      DrawText(ListView.Canvas.Handle, PChar(S), Length(S), R, DT_SINGLELINE or
+        DT_VCENTER or DT_NOPREFIX or DT_END_ELLIPSIS);
+    end;
+  end;
+end;
+
+{ TListView }
+
+procedure TListView.CMHintShow(var AMessage: TCMHintShow);
+var
+  R: TRect;
+  S: string;
+  Item: Integer;
+  SubItem: Integer;
+  HitTestInfo: TLVHitTestInfo;
+begin
+  with AMessage do
+  begin
+    HitTestInfo.pt := Point(HintInfo.CursorPos.X, HintInfo.CursorPos.Y);
+    if ListView_SubItemHitTest(Handle, @HitTestInfo) <> -1 then
+    begin
+      Item := HitTestInfo.iItem;
+      SubItem := HitTestInfo.iSubItem;
+
+      if (Item <> -1) and (SubItem <> -1) and
+        ListView_GetSubItemRect(Handle, Item, SubItem, LVIR_LABEL, @R) then
+      begin
+        if (SubItem = 0) then
+          S := Items[Item].Caption
+        else
+        begin
+          R.Left := R.Left + 6;
+          S := Items[Item].SubItems[SubItem - 1];
+        end;
+
+        if ListView_GetStringWidth(Handle, PChar(S)) > R.Right - R.Left then
+        begin
+          MapWindowPoints(Handle, 0, R.TopLeft, 1);
+          MapWindowPoints(Handle, 0, R.BottomRight, 1);
+
+          HintInfo^.CursorRect := R;
+          HintInfo^.HintPos.X := R.Left;
+          HintInfo^.HintPos.Y := R.Top;
+          HintInfo^.HintMaxWidth := ClientWidth;
+          HintInfo^.HintStr := S;
+
+          AMessage.Result := 0;
+        end
+        else
+          AMessage.Result := 1;
+      end
+      else
+        AMessage.Result := 1;
+    end
+    else
+      inherited;
+  end;
+end;
+
+end.

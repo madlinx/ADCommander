@@ -61,8 +61,6 @@
 __history/
 __recovery/
 *.~*
-_Doc/
-_Resources/
 Win32/
 Win64/ 
 

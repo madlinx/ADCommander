@@ -1,0 +1,4 @@
+Что бы включить .NET Framework 3.5 в 10:
+1. Смонтиовать образ с дистрибутивом Windows 10, либо вставить диск в привод.
+2. Выполнить в коммандной строке:
+   Dism /online /enable-feature /featurename:NetFx3 /All /Source:<буква диска с виндой>:\sources\sxs /LimitAccess

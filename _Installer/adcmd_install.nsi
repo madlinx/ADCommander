@@ -18,6 +18,7 @@
   !include "MUI2.nsh"
   !include "UAC.nsh"
   !include "WinVer.nsh"
+  !include "FileFunc.nsh"
   !include "WinMessages.nsh"
 
 ;--------------------------------
@@ -87,7 +88,7 @@
     Push $2 ; process handle
     
     FindWindow $0 '${WND_CLASS}' ''
-    IntCmp $0 0 done
+    IntCmp $0 0 FinishUp
     DetailPrint "Остановка приложения ${APP_NAME}"
     
     ${While} $0 <> 0
@@ -107,7 +108,7 @@
       FindWindow $0 '${WND_CLASS}' ''
     ${EndWhile}
     
-    done:
+    FinishUp:
       Pop $2
       Pop $1
       Pop $0
@@ -176,7 +177,7 @@
     Var /GLOBAL DotNETInstallPath
 	Var /GLOBAL EXIT_CODE
     
-    StrCpy $RequiredVersion "3.5"
+    StrCpy $RequiredVersion "3.57"
     
     ReadRegStr $DotNETVersion HKLM "SOFTWARE\Microsoft\NET Framework Setup\NDP\v$RequiredVersion" "Version"
     ReadRegStr $DotNETInstallPath HKLM "SOFTWARE\Microsoft\NET Framework Setup\NDP\v$RequiredVersion" "InstallPath"
@@ -188,34 +189,34 @@
       Goto Completed
       
     DoLocalInstallation:
-      # .NET Framework found on the local disk.  Use this copy
+      # .NET Framework found on the local disk. Use this copy
       DetailPrint "Установка Microsoft .NET Framework v$RequiredVersion..."
       ExecWait '"$EXEDIR\dotnetfx35.exe"' $EXIT_CODE
       Goto CheckRebootRequest
  
     DoNetworkInstallation:
-      # Now, let's Download the .NET
-      # DetailPrint "Загрузка Microsoft .NET Framework v$RequiredVersion..."
+      # Now, let's Download the .NET Framework
+      DetailPrint "Загрузка Microsoft .NET Framework v$RequiredVersion..."
       NSISdl::download "https://download.microsoft.com/download/2/0/E/20E90413-712F-438C-988E-FDAA79A8AC3D/dotnetfx35.exe" "$TEMP\dotnetfx35.exe"
       Pop $R0 ;Get the return value
-      StrCmp $R0 "success" success 0
-      StrCmp $R0 "cancel" cancel fail
-      success:
+      StrCmp $R0 "success" Success 0
+      StrCmp $R0 "cancel" Cancel Fail
+      Success:
         DetailPrint "Установка Microsoft .NET Framework v$RequiredVersion..."
         ExecWait '"$TEMP\dotnetfx35.exe"' $EXIT_CODE
         Goto CheckRebootRequest
-      cancel:
+      Cancel:
         DetailPrint "Загрузка Microsoft .NET Framework v$RequiredVersion отменена пользователем"
         DetailPrint "Интеграция Skype for Business в приложение ${APP_NAME} будет недоступна"
         Goto Completed
-      fail:
+      Fail:
         DetailPrint "Невозможно загрузить Microsoft .NET Framework v$RequiredVersion"
         DetailPrint "Ошибка загрузки: $R0"
         DetailPrint "Интеграция Skype for Business в приложение ${APP_NAME} будет недоступна"
         Goto Completed
  
     CheckRebootRequest:
-      # $EXIT_CODE contains the return codes.  1641 and 3010 means a Reboot has been requested
+      # $EXIT_CODE contains the return codes. 1641 and 3010 means a Reboot has been requested
       ${If} $EXIT_CODE = 1641
         ${OrIf} $EXIT_CODE = 3010
           SetRebootFlag true
@@ -290,9 +291,13 @@ Section "Install" SecInstall
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\AD Commander" "DisplayIcon" "$INSTDIR\adcmd.exe"
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\AD Commander" "DisplayName" "${APP_NAME}"
   ${EndIf}
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\AD Commander" "InstallLocation" "$INSTDIR" 
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\AD Commander" "DisplayVersion" "${PRODUCT_VERSION}"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\AD Commander" "Publisher" "JSC Mozyr Oil Refinery"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\AD Commander" "UninstallString" "$INSTDIR\Uninstall.exe"
+  ${GetSize} "$INSTDIR" "/S=0K" $0 $1 $2
+  IntFmt $0 "0x%08X" $0
+  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\AD Commander" "EstimatedSize" $0
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\AD Commander" "NoModify" 1
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\AD Commander" "NoRepair" 1
   
