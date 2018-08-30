@@ -59,8 +59,13 @@ procedure ServerBinding(ADcDnsName: string; out ALDAP: PLDAP;
   AOnException: TExceptionProc); overload;
 procedure ServerBinding(ADcName: string; ARootDSE: Pointer;
   AOnException: TExceptionProc); overload;
-function ADCreateUO(ALDAP: PLDAP; AContainer: string; ACN: string): Boolean; overload;
-function ADCreateUO(ARootDSE: IADS; AContainer: string; AName: string): Boolean; overload;
+function ADCreateUO(ALDAP: PLDAP; AContainer: string; ANewOU: string): Boolean; overload;
+function ADCreateUO(ARootDSE: IADS; AContainer: string; ANewOU: string): Boolean; overload;
+function ADCreateUODS(ARootDSE: IADS; AContainer: string; ANewOU: string): string;
+function ADDeleteObject(ALDAP: PLDAP; ADN: string): Boolean; overload;
+function ADDeleteObject(ARootDSE: IADS; ADN: string): Boolean; overload;
+function ADDeleteObjectDS(ARootDSE: IADS; ADN: string): Boolean; overload;
+
 
 
 implementation
@@ -1786,72 +1791,354 @@ begin
   CoUninitialize;
 end;
 
-function ADCreateUO(ALDAP: PLDAP; AContainer: string; ACN: string): Boolean;
+function ADCreateUO(ALDAP: PLDAP; AContainer: string; ANewOU: string): Boolean;
 var
   ldapDN: AnsiString;
   attrArray: array of PLDAPMod;
   valClass: array of PAnsiChar;
-  valCN: array of PAnsiChar;
+  valOU: array of PAnsiChar;
   valSAMAccountName: array of PAnsiChar;
   returnCode: ULONG;
   i: Integer;
 begin
-//  if AContainer.IsEmpty
-//    then Exit;
-//
-//  ldapDN := Format('CN=%s,%s', [ADEscapeReservedCharacters(ACN), AContainer]);
-//
-//  SetLength(valClass, 3);
-//  valClass[0] := PAnsiChar('top');
-//  valClass[1] := PAnsiChar('organizationalUnit');
-//
-//  SetLength(valCN, 2);
-//  valCN[0] := PAnsiChar(AnsiString(ACN));
-//
-//  SetLength(valSAMAccountName, 2);
-//  valSAMAccountName[0] := PAnsiChar(AnsiString(Self.sAMAccountName));
-//
-//  SetLength(attrArray, 3);
-//
-//  New(attrArray[0]);
-//  with attrArray[0]^ do
-//  begin
-//    mod_op       := 0;
-//    mod_type     := PAnsiChar('objectClass');
-//    modv_strvals := @valClass[0];
-//  end;
-//
-//  New(attrArray[1]);
-//  with attrArray[1]^ do
-//  begin
-//    mod_op       := 0;
-//    mod_type     := PAnsiChar('cn');
-//    modv_strvals := @valCN[0];
-//  end;
-//
-//  try
-//    returnCode := ldap_add_ext_s(
-//      ALDAP,
-//      PAnsiChar(ldapDN),
-//      @attrArray[0],
-//      nil,
-//      nil
-//    );
-//
-//    if returnCode <> LDAP_SUCCESS
-//      then raise Exception.Create(ldap_err2string(returnCode));
-//
+  if AContainer.IsEmpty or ANewOU.IsEmpty
+    then Exit;
+
+  ldapDN := Format('OU=%s,%s', [ADEscapeReservedCharacters(ANewOU), AContainer]);
+
+  SetLength(valClass, 3);
+  valClass[0] := PAnsiChar('top');
+  valClass[1] := PAnsiChar('organizationalUnit');
+
+  SetLength(valOU, 2);
+  valOU[0] := PAnsiChar(AnsiString(ANewOU));
+
+  SetLength(attrArray, 3);
+
+  New(attrArray[0]);
+  with attrArray[0]^ do
+  begin
+    mod_op       := 0;
+    mod_type     := PAnsiChar('objectClass');
+    modv_strvals := @valClass[0];
+  end;
+
+  New(attrArray[1]);
+  with attrArray[1]^ do
+  begin
+    mod_op       := 0;
+    mod_type     := PAnsiChar('ou');
+    modv_strvals := @valOU[0];
+  end;
+
+  try
+    returnCode := ldap_add_ext_s(
+      ALDAP,
+      PAnsiChar(ldapDN),
+      @attrArray[0],
+      nil,
+      nil
+    );
+
+    if returnCode <> LDAP_SUCCESS
+      then raise Exception.Create(ldap_err2string(returnCode));
+
 //    Result := ldapDN;
-//  finally
-//    for i := Low(attrArray) to High(attrArray) do
-//      if Assigned(attrArray[i])
-//        then Dispose(attrArray[i]);
-//  end;
+  finally
+    for i := Low(attrArray) to High(attrArray) do
+      if Assigned(attrArray[i])
+        then Dispose(attrArray[i]);
+  end;
 end;
 
-function ADCreateUO(ARootDSE: IADS; AContainer: string; AName: string): Boolean;
+function ADCreateUO(ARootDSE: IADS; AContainer: string; ANewOU: string): Boolean;
+var
+  v: OleVariant;
+  hostName: string;
+  hr: HRESULT;
+  ICont: IADsContainer;
+  INewCont: IADs;
 begin
+//  Result := '';
+  ICont := nil;
+  INewCont := nil;
 
+  if AContainer.IsEmpty or ANewOU.IsEmpty
+    then Exit;
+
+  CoInitialize(nil);
+
+  try
+    v := ARootDSE.Get('dnsHostName');
+    hostName := VariantToStringWithDefault(v, '');
+    VariantClear(v);
+
+    hr := ADsOpenObject(
+      PChar(Format('LDAP://%s/%s', [hostName, AContainer])),
+      nil,
+      nil,
+      ADS_SECURE_AUTHENTICATION or ADS_SERVER_BIND,
+      IID_IADsContainer,
+      @ICont
+    );
+
+    if Succeeded(hr) then
+    begin
+      INewCont := ICont.Create(
+        'organizationalUnit',
+        'OU=' + ADEscapeReservedCharacters(ANewOU)
+      ) as IADs;
+
+      if INewCont <> nil then
+      begin
+        INewCont.SetInfo;
+//        v := INewCont.Get('distinguishedName');
+//        Result := VariantToStringWithDefault(v, '');
+//        VariantClear(v);
+      end else raise Exception.Create(ADSIErrorToString);
+    end else raise Exception.Create(ADSIErrorToString);
+  finally
+    CoUninitialize;
+  end;
+end;
+
+function ADCreateUODS(ARootDSE: IADS; AContainer: string; ANewOU: string): string;
+var
+  v: OleVariant;
+  hostName: string;
+  hr: HRESULT;
+  attrArray: array of ADS_ATTR_INFO;
+  valClass: ADSVALUE;
+  IDir: IDirectoryObject;
+  IDisp: IDispatch;
+  INewCont: IADsContainer;
+begin
+  Result := '';
+  IDir := nil;
+  INewCont := nil;
+
+  if AContainer.IsEmpty or ANewOU.IsEmpty
+    then Exit;
+
+  CoInitialize(nil);
+
+  try
+    v := ARootDSE.Get('dnsHostName');
+    hostName := VariantToStringWithDefault(v, '');
+    VariantClear(v);
+
+    SetLength(attrArray, 1);
+
+    with attrArray[0] do
+    begin
+      pszAttrName   := 'objectClass';
+      dwControlCode := ADS_ATTR_UPDATE;
+      dwADsType     := ADSTYPE_CASE_IGNORE_STRING;
+      pADsValues    := @valClass;
+      dwNumValues   := 1;
+    end;
+
+    valClass.dwType := ADSTYPE_CASE_IGNORE_STRING;
+    valClass.__MIDL____MIDL_itf_ads_0000_00000000.CaseIgnoreString := PChar('organizationalUnit');
+
+    hr := ADsOpenObject(
+      PChar(Format('LDAP://%s/%s', [hostName, AContainer])),
+      nil,
+      nil,
+      ADS_SECURE_AUTHENTICATION or ADS_SERVER_BIND,
+      IID_IDirectoryObject,
+      @IDir
+    );
+
+    if Succeeded(hr) then
+    begin
+      hr := IDir.CreateDSObject(
+        PChar('OU=' + ADEscapeReservedCharacters(ANewOU)),
+        @attrArray[0],
+        Length(attrArray),
+        IDisp
+      );
+
+      if Succeeded(hr) then
+      begin
+        IDisp.QueryInterface(IID_IADsContainer, INewCont);
+//        v := INewCont.Get('distinguishedName');
+//        Result := VariantToStringWithDefault(v, '');
+//        VariantClear(v);
+      end else raise Exception.Create(ADSIErrorToString);
+    end else raise Exception.Create(ADSIErrorToString);
+  finally
+    CoUninitialize;
+  end;
+end;
+
+function ADDeleteObject(ALDAP: PLDAP; ADN: string): Boolean;
+var
+  ldapDN: AnsiString;
+  returnCode: ULONG;
+begin
+  Result := False;
+
+  ldapDN := AnsiString(ADN);
+
+  try
+    returnCode := ldap_delete_ext_s(
+      ALDAP,
+      PAnsiChar(ldapDN),
+      nil,
+      nil
+    );
+
+    if returnCode <> LDAP_SUCCESS
+      then raise Exception.Create(ldap_err2string(returnCode));
+
+    Result := True;
+  finally
+
+  end;
+end;
+
+function ADDeleteObject(ARootDSE: IADS; ADN: string): Boolean;
+var
+  Obj: IADs;
+  objClass: string;
+  objRelativeName: string;
+  objCont: IADsContainer;
+  hr: HRESULT;
+  dn: string;
+  ADSIPath_LDAP: string;
+  v: OleVariant;
+  hostName: string;
+begin
+  CoInitialize(nil);
+
+  try
+    v := ARootDSE.Get('dnsHostName');
+    hostName := VariantToStringWithDefault(v, '');
+    VariantClear(v);
+  except
+
+  end;
+
+  { ADSI requires that the forward slash character "/" also be escaped }
+  { in distinguished names in most scripts where distinguished names   }
+  { are used to bind to objects in Active Directory:                   }
+  { https://social.technet.microsoft.com/wiki/contents/articles/5312.active-directory-characters-to-escape.aspx }
+
+  dn := ReplaceStr(ADN, '/', '\/');
+
+  if hostName.IsEmpty
+    then ADSIPath_LDAP := Format('LDAP://%s', [dn])
+    else ADSIPath_LDAP := Format('LDAP://%s/%s', [hostName, dn]);
+
+  Result := False;
+
+  try
+    hr := ADsOpenObject(
+      PChar(ADSIPath_LDAP),
+      nil,
+      nil,
+      ADS_SECURE_AUTHENTICATION or ADS_SERVER_BIND,
+      IID_IADs,
+      @Obj
+    );
+
+    if Succeeded(hr) then
+    begin
+      objClass := Obj.Class_;
+      objRelativeName := Obj.Name;
+
+      hr := ADsOpenObject(
+        PChar(Obj.Parent),
+        nil,
+        nil,
+        ADS_SECURE_AUTHENTICATION or ADS_SERVER_BIND,
+        IID_IADsContainer,
+        @objCont
+      );
+
+      if Succeeded(hr) then
+      begin
+        objCont.Delete(
+          objClass,
+          objRelativeName
+        );
+      end else raise Exception.Create(ADSIErrorToString);
+    end else raise Exception.Create(ADSIErrorToString);
+
+    Result := True;
+  finally
+    CoUninitialize;
+  end;
+end;
+
+function ADDeleteObjectDS(ARootDSE: IADS; ADN: string): Boolean;
+var
+  Obj: IADs;
+  objRelativeName: string;
+  objCont: IDirectoryObject;
+  hr: HRESULT;
+  dn: string;
+  ADSIPath_LDAP: string;
+  v: OleVariant;
+  hostName: string;
+begin
+  CoInitialize(nil);
+
+  try
+    v := ARootDSE.Get('dnsHostName');
+    hostName := VariantToStringWithDefault(v, '');
+    VariantClear(v);
+  except
+
+  end;
+
+  { ADSI requires that the forward slash character "/" also be escaped }
+  { in distinguished names in most scripts where distinguished names   }
+  { are used to bind to objects in Active Directory:                   }
+  { https://social.technet.microsoft.com/wiki/contents/articles/5312.active-directory-characters-to-escape.aspx }
+
+  dn := ReplaceStr(ADN, '/', '\/');
+
+  if hostName.IsEmpty
+    then ADSIPath_LDAP := Format('LDAP://%s', [dn])
+    else ADSIPath_LDAP := Format('LDAP://%s/%s', [hostName, dn]);
+
+  Result := False;
+
+  try
+    hr := ADsOpenObject(
+      PChar(ADSIPath_LDAP),
+      nil,
+      nil,
+      ADS_SECURE_AUTHENTICATION or ADS_SERVER_BIND,
+      IID_IADs,
+      @Obj
+    );
+
+    if Succeeded(hr) then
+    begin
+      objRelativeName := Obj.Name;
+
+      hr := ADsOpenObject(
+        PChar(Obj.Parent),
+        nil,
+        nil,
+        ADS_SECURE_AUTHENTICATION or ADS_SERVER_BIND,
+        IID_IDirectoryObject,
+        @objCont
+      );
+
+      if Succeeded(hr) then
+      begin
+        objCont.DeleteDSObject(PChar(objRelativeName));
+      end else raise Exception.Create(ADSIErrorToString);
+    end else raise Exception.Create(ADSIErrorToString);
+
+    Result := True;
+  finally
+    CoUninitialize;
+  end;
 end;
 
 end.

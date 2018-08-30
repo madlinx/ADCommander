@@ -2209,16 +2209,16 @@ begin
   if MessageBoxIndirect(MsgBoxParam) = mrNo
     then Exit;
 
-//  try
-//    case apAPI of
-//      ADC_API_LDAP: begin
-//        obj.Delete(LDAPBinding);
-//      end;
-//
-//      ADC_API_ADSI: begin
-//        obj.Delete;
-//      end;
-//    end;
+  try
+    case apAPI of
+      ADC_API_LDAP: begin
+        ADDeleteObject(LDAPBinding, POrganizationalUnit(TMenuItemEx(Sender).Data)^.DistinguishedName);
+      end;
+
+      ADC_API_ADSI: begin
+        ADDeleteObjectDS(ADSIBinding, POrganizationalUnit(TMenuItemEx(Sender).Data)^.DistinguishedName);
+      end;
+    end;
 //
 //    eventFileName := apEventsDir + '\' + obj.objectSid + '.xml';
 //    if FileExists(eventFileName)
@@ -2229,7 +2229,7 @@ begin
 //    List_ObjFull.Remove(obj);
 //    ListView_Accounts.Invalidate;
 //    ClearStatusBar;
-//  except
+  except
 //    on E: Exception do
 //    begin
 //      with MsgBoxParam do
@@ -2257,7 +2257,7 @@ begin
 //        ListView_Accounts.Invalidate;
 //      end;
 //    end;
-//  end;
+  end;
 end;
 
 procedure TADCmd_MainForm.Object_DeleteClick(Sender: TObject);

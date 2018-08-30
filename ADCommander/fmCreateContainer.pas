@@ -54,11 +54,11 @@ procedure TForm_CreateContainer.Button_OKClick(Sender: TObject);
 begin
   case apAPI of
     ADC_API_LDAP: begin
-      ADCreateUO(LDAPBinding, Edit_Container.Text, Edit_Name.Text);
+      ADCreateUO(LDAPBinding, FContainer.DistinguishedName, Edit_Name.Text);
     end;
 
     ADC_API_ADSI: begin
-      ADCreateUO(ADSIBinding, Edit_Container.Text, Edit_Name.Text);
+      ADCreateUO(ADSIBinding, FContainer.DistinguishedName, Edit_Name.Text);
     end;
   end;
 end;

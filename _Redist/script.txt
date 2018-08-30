@@ -1,0 +1,2 @@
+[?21.?08.?2015 10:39] Дмитрий Костюченко: 
+Set-Mailbox -HiddenFromAddressListsEnabled $true -Identity xxx
