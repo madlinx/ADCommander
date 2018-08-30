@@ -231,6 +231,7 @@ type
     procedure OnUserChange(Sender: TObject);
     procedure OnComputerChange(Sender: TObject);
     procedure OnPasswordChange(Sender: TObject; AChangeOnLogon: Boolean);
+    procedure OnOrganizationalUnitCreate(ANewDN: string);
   public
     { Public declarations }
     procedure UpdateDCList;
@@ -2156,6 +2157,7 @@ procedure TADCmd_MainForm.OnMenuItem_CreateContainer(Sender: TObject);
 begin
   Form_CreateContainer.CallingForm := Self;
   Form_CreateContainer.DomainController := SelectedDC;
+  Form_CreateContainer.OnOrganizationalUnitCreate := OnOrganizationalUnitCreate;
   if Sender is TMenuItemEx
     then if Assigned(TMenuItemEx(Sender).Data)
       then Form_CreateContainer.Container := POrganizationalUnit(TMenuItemEx(Sender).Data)^;
@@ -2180,83 +2182,81 @@ var
   msgText: string;
   eventFileName: string;
 begin
-  if Sender is TMenuItemEx
-    then if Assigned(TMenuItemEx(Sender).Data)
-      then Form_CreateContainer.Container := POrganizationalUnit(TMenuItemEx(Sender).Data)^;
-
-  msgText := Format(msgTemplate, [
-      'контейнер',
-      POrganizationalUnit(TMenuItemEx(Sender).Data)^.name
-  ]);
-
-  with MsgBoxParam do
+  if Sender is TMenuItemEx then if Assigned(TMenuItemEx(Sender).Data) then
   begin
-    cbSize := SizeOf(MsgBoxParam);
-    hwndOwner := Self.Handle;
-    hInstance := 0;
-    case apAPI of
-      ADC_API_LDAP: lpszCaption := PChar('LDAP Confirmation');
-      ADC_API_ADSI: lpszCaption := PChar('ADSI Confirmation');
+    msgText := Format(msgTemplate, [
+        'контейнер',
+        POrganizationalUnit(TMenuItemEx(Sender).Data)^.name
+    ]);
+
+    with MsgBoxParam do
+    begin
+      cbSize := SizeOf(MsgBoxParam);
+      hwndOwner := Self.Handle;
+      hInstance := 0;
+      case apAPI of
+        ADC_API_LDAP: lpszCaption := PChar('LDAP Confirmation');
+        ADC_API_ADSI: lpszCaption := PChar('ADSI Confirmation');
+      end;
+      lpszIcon := MAKEINTRESOURCE(32515);
+      dwStyle := MB_YESNO or MB_ICONEXCLAMATION or MB_DEFBUTTON2;
+      dwContextHelpId := 0;
+      lpfnMsgBoxCallback := nil;
+      dwLanguageId := LANG_NEUTRAL;
+      lpszText := PChar(msgText);
     end;
-    lpszIcon := MAKEINTRESOURCE(32515);
-    dwStyle := MB_YESNO or MB_ICONEXCLAMATION or MB_DEFBUTTON2;
-    dwContextHelpId := 0;
-    lpfnMsgBoxCallback := nil;
-    dwLanguageId := LANG_NEUTRAL;
-    lpszText := PChar(msgText);
-  end;
 
-  if MessageBoxIndirect(MsgBoxParam) = mrNo
-    then Exit;
+    if MessageBoxIndirect(MsgBoxParam) = mrYes then
+    try
+      case apAPI of
+        ADC_API_LDAP: begin
+          ADDeleteObject(
+            LDAPBinding,
+            POrganizationalUnit(TMenuItemEx(Sender).Data)^.DistinguishedName
+          );
+        end;
 
-  try
-    case apAPI of
-      ADC_API_LDAP: begin
-        ADDeleteObject(LDAPBinding, POrganizationalUnit(TMenuItemEx(Sender).Data)^.DistinguishedName);
+        ADC_API_ADSI: begin
+          ADDeleteObjectDS(
+            ADSIBinding,
+            POrganizationalUnit(TMenuItemEx(Sender).Data)^.DistinguishedName
+          );
+        end;
       end;
 
-      ADC_API_ADSI: begin
-        ADDeleteObjectDS(ADSIBinding, POrganizationalUnit(TMenuItemEx(Sender).Data)^.DistinguishedName);
+
+  //
+  //    eventFileName := apEventsDir + '\' + obj.objectSid + '.xml';
+  //    if FileExists(eventFileName)
+  //      then DeleteFile(eventFileName);
+  //
+  //    ListView_Accounts.Items.Count := ListView_Accounts.Items.Count - 1;
+  //    List_Obj.Remove(obj);
+  //    List_ObjFull.Remove(obj);
+  //    ListView_Accounts.Invalidate;
+  //    ClearStatusBar;
+    except
+      on E: Exception do
+      begin
+        with MsgBoxParam do
+        begin
+          cbSize := SizeOf(MsgBoxParam);
+          hwndOwner := Self.Handle;
+          hInstance := 0;
+          case apAPI of
+            ADC_API_LDAP: lpszCaption := PChar('LDAP Exception');
+            ADC_API_ADSI: lpszCaption := PChar('ADSI Exception');
+          end;
+          lpszIcon := MAKEINTRESOURCE(32513);
+          dwStyle := MB_OK or MB_ICONHAND;
+          dwContextHelpId := 0;
+          lpfnMsgBoxCallback := nil;
+          dwLanguageId := LANG_NEUTRAL;
+          lpszText := PChar(E.Message);
+        end;
+        MessageBoxIndirect(MsgBoxParam);
       end;
     end;
-//
-//    eventFileName := apEventsDir + '\' + obj.objectSid + '.xml';
-//    if FileExists(eventFileName)
-//      then DeleteFile(eventFileName);
-//
-//    ListView_Accounts.Items.Count := ListView_Accounts.Items.Count - 1;
-//    List_Obj.Remove(obj);
-//    List_ObjFull.Remove(obj);
-//    ListView_Accounts.Invalidate;
-//    ClearStatusBar;
-  except
-//    on E: Exception do
-//    begin
-//      with MsgBoxParam do
-//      begin
-//        cbSize := SizeOf(MsgBoxParam);
-//        hwndOwner := Self.Handle;
-//        hInstance := 0;
-//        case apAPI of
-//          ADC_API_LDAP: lpszCaption := PChar('LDAP Exception');
-//          ADC_API_ADSI: lpszCaption := PChar('ADSI Exception');
-//        end;
-//        lpszIcon := MAKEINTRESOURCE(32513);
-//        dwStyle := MB_YESNO or MB_ICONHAND;
-//        dwContextHelpId := 0;
-//        lpfnMsgBoxCallback := nil;
-//        dwLanguageId := LANG_NEUTRAL;
-//        lpszText := PChar(E.Message + #13#10#13#10 + 'Удалить запись из списка?');
-//      end;
-//
-//      if MessageBoxIndirect(MsgBoxParam) = mrYes then
-//      begin
-//        ListView_Accounts.Items.Count := ListView_Accounts.Items.Count - 1;
-//        List_Obj.Remove(obj);
-//        List_ObjFull.Remove(obj);
-//        ListView_Accounts.Invalidate;
-//      end;
-//    end;
   end;
 end;
 
@@ -2481,6 +2481,23 @@ end;
 procedure TADCmd_MainForm.OnObjListSort(Sender: TObject);
 begin
   ListView_Accounts.Invalidate;
+end;
+
+procedure TADCmd_MainForm.OnOrganizationalUnitCreate(ANewDN: string);
+var
+  i: Integer;
+  n: TTreeNode;
+begin
+  SelectedDC.BuildTree(TreeView_AD);
+  for n in TreeView_AD.Items do
+  begin
+    if n.Data <> nil then
+      if CompareText(ANewDN, POrganizationalUnit(n.Data)^.DistinguishedName) = 0 then
+      begin
+        TreeView_AD.Selected := n;
+        Break;
+      end;
+  end;
 end;
 
 procedure TADCmd_MainForm.OnPasswordChange(Sender: TObject;
@@ -3014,7 +3031,7 @@ begin
       mi.Caption := 'Удалить';
       mi.Data := POrganizationalUnit(Node.Data);
       mi.OnClick := OnMenuItem_DeleteContainer;
-      mi.Enabled := POrganizationalUnit(Node.Data)^.CanBeDeleted;
+      mi.Enabled := (not Node.IsFirstNode) and (POrganizationalUnit(Node.Data)^.CanBeDeleted);
       PopupMenu_TreeAD.Items.Add(mi);
 
       P := TreeView_AD.ClientToScreen(Point(X, Y));

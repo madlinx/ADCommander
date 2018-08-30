@@ -21,9 +21,11 @@ type
     procedure Button_CancelClick(Sender: TObject);
     procedure Button_OKClick(Sender: TObject);
   private
+    FOnOrganizationalUnitCreate: TCreateOrganizationalUnitProc;
     FCallingForm: TForm;
     FDomainController: TDCInfo;
     FContainer: TOrganizationalUnit;
+    procedure ClearTextFields;
     procedure SetCallingForm(const Value: TForm);
     procedure SetContainer(const Value: TOrganizationalUnit);
     procedure SetDomainController(const Value: TDCInfo);
@@ -32,6 +34,7 @@ type
     property CallingForm: TForm write SetCallingForm;
     property DomainController: TDCInfo read FDomainController write SetDomainController;
     property Container: TOrganizationalUnit read FContainer write SetContainer;
+    property OnOrganizationalUnitCreate: TCreateOrganizationalUnitProc read FOnOrganizationalUnitCreate write FOnOrganizationalUnitCreate;
   end;
 
 var
@@ -41,7 +44,7 @@ implementation
 
 {$R *.dfm}
 
-uses fmContainerSelection;
+uses fmContainerSelection, fmMainForm;
 
 { TForm_CreateContainer }
 
@@ -51,15 +54,24 @@ begin
 end;
 
 procedure TForm_CreateContainer.Button_OKClick(Sender: TObject);
+var
+  res: string;
 begin
+
   case apAPI of
     ADC_API_LDAP: begin
-      ADCreateUO(LDAPBinding, FContainer.DistinguishedName, Edit_Name.Text);
+      res := ADCreateUO(LDAPBinding, FContainer.DistinguishedName, Edit_Name.Text);
     end;
 
     ADC_API_ADSI: begin
-      ADCreateUO(ADSIBinding, FContainer.DistinguishedName, Edit_Name.Text);
+      res := ADCreateUO(ADSIBinding, FContainer.DistinguishedName, Edit_Name.Text);
     end;
+  end;
+
+  if (not res.IsEmpty) and Assigned(FOnOrganizationalUnitCreate) then
+  begin
+    FOnOrganizationalUnitCreate(res);
+    Close;
   end;
 end;
 
@@ -77,13 +89,27 @@ begin
   Self.Enabled := False;
 end;
 
+procedure TForm_CreateContainer.ClearTextFields;
+var
+  i: Integer;
+  Ctrl: TControl;
+begin
+  for i := 0 to Self.ControlCount - 1 do
+  begin
+    Ctrl := Self.Controls[i];
+    if Ctrl is TEdit then TEdit(Ctrl).Clear else
+    if Ctrl is TCheckBox then TCheckBox(Ctrl).Checked := False else
+    if Ctrl is TMemo then TMemo(Ctrl).Clear
+  end;
+end;
+
 procedure TForm_CreateContainer.FormClose(Sender: TObject;
   var Action: TCloseAction);
 begin
-//  ClearTextFields;
+  ClearTextFields;
   FDomainController := nil;
   FContainer.Clear;
-//  FOnUserCreate := nil;
+  FOnOrganizationalUnitCreate := nil;
 
   if FCallingForm <> nil then
   begin

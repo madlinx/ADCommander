@@ -276,6 +276,7 @@ type
   TSelectGroupProc = procedure (Sender: TObject; AGroupList: TADGroupList) of object;
   TApplyWorkstationsProc = procedure (Sender: TObject; AWorkstations: string) of object;
   TChangeEventProc = procedure (Sender: TObject; AMode: Byte; AEvent: TADEvent) of object;
+  TCreateOrganizationalUnitProc = procedure (ANewDN: string) of object;
 
   TQueryFullProcessImageName = function (Process: THandle; Flags: DWORD;
     Buffer: LPTSTR; Size: PDWORD): DWORD; stdcall;

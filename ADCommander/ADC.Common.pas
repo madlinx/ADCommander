@@ -59,8 +59,8 @@ procedure ServerBinding(ADcDnsName: string; out ALDAP: PLDAP;
   AOnException: TExceptionProc); overload;
 procedure ServerBinding(ADcName: string; ARootDSE: Pointer;
   AOnException: TExceptionProc); overload;
-function ADCreateUO(ALDAP: PLDAP; AContainer: string; ANewOU: string): Boolean; overload;
-function ADCreateUO(ARootDSE: IADS; AContainer: string; ANewOU: string): Boolean; overload;
+function ADCreateUO(ALDAP: PLDAP; AContainer: string; ANewOU: string): string; overload;
+function ADCreateUO(ARootDSE: IADS; AContainer: string; ANewOU: string): string; overload;
 function ADCreateUODS(ARootDSE: IADS; AContainer: string; ANewOU: string): string;
 function ADDeleteObject(ALDAP: PLDAP; ADN: string): Boolean; overload;
 function ADDeleteObject(ARootDSE: IADS; ADN: string): Boolean; overload;
@@ -1791,7 +1791,7 @@ begin
   CoUninitialize;
 end;
 
-function ADCreateUO(ALDAP: PLDAP; AContainer: string; ANewOU: string): Boolean;
+function ADCreateUO(ALDAP: PLDAP; AContainer: string; ANewOU: string): string;
 var
   ldapDN: AnsiString;
   attrArray: array of PLDAPMod;
@@ -1801,6 +1801,8 @@ var
   returnCode: ULONG;
   i: Integer;
 begin
+  Result := '';
+
   if AContainer.IsEmpty or ANewOU.IsEmpty
     then Exit;
 
@@ -1843,7 +1845,7 @@ begin
     if returnCode <> LDAP_SUCCESS
       then raise Exception.Create(ldap_err2string(returnCode));
 
-//    Result := ldapDN;
+    Result := ldapDN;
   finally
     for i := Low(attrArray) to High(attrArray) do
       if Assigned(attrArray[i])
@@ -1851,7 +1853,7 @@ begin
   end;
 end;
 
-function ADCreateUO(ARootDSE: IADS; AContainer: string; ANewOU: string): Boolean;
+function ADCreateUO(ARootDSE: IADS; AContainer: string; ANewOU: string): string;
 var
   v: OleVariant;
   hostName: string;
@@ -1859,7 +1861,7 @@ var
   ICont: IADsContainer;
   INewCont: IADs;
 begin
-//  Result := '';
+  Result := '';
   ICont := nil;
   INewCont := nil;
 
@@ -1892,9 +1894,9 @@ begin
       if INewCont <> nil then
       begin
         INewCont.SetInfo;
-//        v := INewCont.Get('distinguishedName');
-//        Result := VariantToStringWithDefault(v, '');
-//        VariantClear(v);
+        v := INewCont.Get('distinguishedName');
+        Result := VariantToStringWithDefault(v, '');
+        VariantClear(v);
       end else raise Exception.Create(ADSIErrorToString);
     end else raise Exception.Create(ADSIErrorToString);
   finally
@@ -1911,7 +1913,7 @@ var
   valClass: ADSVALUE;
   IDir: IDirectoryObject;
   IDisp: IDispatch;
-  INewCont: IADsContainer;
+  INewCont: IADs;
 begin
   Result := '';
   IDir := nil;
@@ -1961,10 +1963,12 @@ begin
 
       if Succeeded(hr) then
       begin
-        IDisp.QueryInterface(IID_IADsContainer, INewCont);
-//        v := INewCont.Get('distinguishedName');
-//        Result := VariantToStringWithDefault(v, '');
-//        VariantClear(v);
+        hr := IDisp.QueryInterface(IID_IADsContainer, INewCont);
+        if not Succeeded(hr)
+          then raise Exception.Create(ADSIErrorToString);
+        v := INewCont.Get('distinguishedName');
+        Result := VariantToStringWithDefault(v, '');
+        VariantClear(v);
       end else raise Exception.Create(ADSIErrorToString);
     end else raise Exception.Create(ADSIErrorToString);
   finally
@@ -2131,7 +2135,9 @@ begin
 
       if Succeeded(hr) then
       begin
-        objCont.DeleteDSObject(PChar(objRelativeName));
+        hr := objCont.DeleteDSObject(PChar(objRelativeName));
+        if not Succeeded(hr)
+          then raise Exception.Create(ADSIErrorToString);
       end else raise Exception.Create(ADSIErrorToString);
     end else raise Exception.Create(ADSIErrorToString);
 
