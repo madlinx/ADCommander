@@ -125,6 +125,8 @@ type
     N2: TMenuItem;
     Action_Export_Access: TAction;
     Action_Export_Excel: TAction;
+    N3: TMenuItem;
+    N4: TMenuItem;
     procedure ComboBox_DCSelect(Sender: TObject);
     procedure SplitterPaint(Sender: TObject);
     procedure ComboBox_DCDrawItem(Control: TWinControl; Index: Integer;
@@ -224,6 +226,7 @@ type
     procedure OnTargetContainerSelect(Sender: TObject; ACont: TOrganizationalUnit);
     procedure OnMenuItem_CreateUser(Sender: TObject);
     procedure OnMenuItem_CreateContainer(Sender: TObject);
+    procedure OnMenuItem_DeleteContainer(Sender: TObject);
     procedure OnUserCreate(Sender: TObject; AOpenEditor: Boolean);
     procedure OnUserChange(Sender: TObject);
     procedure OnComputerChange(Sender: TObject);
@@ -241,7 +244,7 @@ implementation
 
 uses dmDataModule, fmSettings, fmPasswordReset, fmDameWare, fmComputerInfo,
   fmGroupInfo, fmRename, fmContainerSelection, fmCreateUser, fmUserInfo,
-  fmQuickMessage, fmWorkstationInfo;
+  fmQuickMessage, fmWorkstationInfo, fmCreateContainer;
 
 {$R *.dfm}
 
@@ -2151,13 +2154,110 @@ end;
 
 procedure TADCmd_MainForm.OnMenuItem_CreateContainer(Sender: TObject);
 begin
-
+  Form_CreateContainer.CallingForm := Self;
+  Form_CreateContainer.DomainController := SelectedDC;
+  if Sender is TMenuItemEx
+    then if Assigned(TMenuItemEx(Sender).Data)
+      then Form_CreateContainer.Container := POrganizationalUnit(TMenuItemEx(Sender).Data)^;
+//  Form_CreateUser.OnUserCreate := Self.OnUserCreate;
+  Form_CreateContainer.Position := poMainFormCenter;
+  Form_CreateContainer.Show;
+  Self.Enabled := False;
 end;
 
 procedure TADCmd_MainForm.OnMenuItem_CreateUser(Sender: TObject);
 begin
 
   Action_CreateUserExecute(Sender);
+end;
+
+procedure TADCmd_MainForm.OnMenuItem_DeleteContainer(Sender: TObject);
+const
+  msgTemplate = 'Вы действительно хотите удалить %s %s?';
+var
+  obj: TADObject;
+  MsgBoxParam: TMsgBoxParams;
+  msgText: string;
+  eventFileName: string;
+begin
+  if Sender is TMenuItemEx
+    then if Assigned(TMenuItemEx(Sender).Data)
+      then Form_CreateContainer.Container := POrganizationalUnit(TMenuItemEx(Sender).Data)^;
+
+  msgText := Format(msgTemplate, [
+      'контейнер',
+      POrganizationalUnit(TMenuItemEx(Sender).Data)^.name
+  ]);
+
+  with MsgBoxParam do
+  begin
+    cbSize := SizeOf(MsgBoxParam);
+    hwndOwner := Self.Handle;
+    hInstance := 0;
+    case apAPI of
+      ADC_API_LDAP: lpszCaption := PChar('LDAP Confirmation');
+      ADC_API_ADSI: lpszCaption := PChar('ADSI Confirmation');
+    end;
+    lpszIcon := MAKEINTRESOURCE(32515);
+    dwStyle := MB_YESNO or MB_ICONEXCLAMATION or MB_DEFBUTTON2;
+    dwContextHelpId := 0;
+    lpfnMsgBoxCallback := nil;
+    dwLanguageId := LANG_NEUTRAL;
+    lpszText := PChar(msgText);
+  end;
+
+  if MessageBoxIndirect(MsgBoxParam) = mrNo
+    then Exit;
+
+//  try
+//    case apAPI of
+//      ADC_API_LDAP: begin
+//        obj.Delete(LDAPBinding);
+//      end;
+//
+//      ADC_API_ADSI: begin
+//        obj.Delete;
+//      end;
+//    end;
+//
+//    eventFileName := apEventsDir + '\' + obj.objectSid + '.xml';
+//    if FileExists(eventFileName)
+//      then DeleteFile(eventFileName);
+//
+//    ListView_Accounts.Items.Count := ListView_Accounts.Items.Count - 1;
+//    List_Obj.Remove(obj);
+//    List_ObjFull.Remove(obj);
+//    ListView_Accounts.Invalidate;
+//    ClearStatusBar;
+//  except
+//    on E: Exception do
+//    begin
+//      with MsgBoxParam do
+//      begin
+//        cbSize := SizeOf(MsgBoxParam);
+//        hwndOwner := Self.Handle;
+//        hInstance := 0;
+//        case apAPI of
+//          ADC_API_LDAP: lpszCaption := PChar('LDAP Exception');
+//          ADC_API_ADSI: lpszCaption := PChar('ADSI Exception');
+//        end;
+//        lpszIcon := MAKEINTRESOURCE(32513);
+//        dwStyle := MB_YESNO or MB_ICONHAND;
+//        dwContextHelpId := 0;
+//        lpfnMsgBoxCallback := nil;
+//        dwLanguageId := LANG_NEUTRAL;
+//        lpszText := PChar(E.Message + #13#10#13#10 + 'Удалить запись из списка?');
+//      end;
+//
+//      if MessageBoxIndirect(MsgBoxParam) = mrYes then
+//      begin
+//        ListView_Accounts.Items.Count := ListView_Accounts.Items.Count - 1;
+//        List_Obj.Remove(obj);
+//        List_ObjFull.Remove(obj);
+//        ListView_Accounts.Invalidate;
+//      end;
+//    end;
+//  end;
 end;
 
 procedure TADCmd_MainForm.Object_DeleteClick(Sender: TObject);
@@ -2888,7 +2988,11 @@ begin
     end;
 
     TMouseButton.mbRight: begin
-      PopupMenu_TreeAD.Items[0].Clear;
+      PopupMenu_TreeAD.Items.Clear;
+
+      mi := TMenuItemEx.Create(PopupMenu_TreeAD);
+      mi.Caption := 'Создать';
+      PopupMenu_TreeAD.Items.Add(mi);
 
       mi := TMenuItemEx.Create(PopupMenu_TreeAD);
       mi.Caption := 'Учетная запись';
@@ -2901,8 +3005,17 @@ begin
       mi.Data := POrganizationalUnit(Node.Data);
       mi.OnClick := OnMenuItem_CreateContainer;
       PopupMenu_TreeAD.Items[0].Add(mi);
-      { Времено отключаем }
-      mi.Enabled := False;
+
+      mi := TMenuItemEx.Create(PopupMenu_TreeAD);
+      mi.Caption := '-';
+      PopupMenu_TreeAD.Items.Add(mi);
+
+      mi := TMenuItemEx.Create(PopupMenu_TreeAD);
+      mi.Caption := 'Удалить';
+      mi.Data := POrganizationalUnit(Node.Data);
+      mi.OnClick := OnMenuItem_DeleteContainer;
+      mi.Enabled := POrganizationalUnit(Node.Data)^.CanBeDeleted;
+      PopupMenu_TreeAD.Items.Add(mi);
 
       P := TreeView_AD.ClientToScreen(Point(X, Y));
       PopupMenu_TreeAD.Popup(P.X, P.Y);

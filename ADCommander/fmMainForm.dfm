@@ -311,6 +311,12 @@ object ADCmd_MainForm: TADCmd_MainForm
     object N1: TMenuItem
       Caption = #1057#1086#1079#1076#1072#1090#1100
     end
+    object N3: TMenuItem
+      Caption = '-'
+    end
+    object N4: TMenuItem
+      Caption = #1059#1076#1072#1083#1080#1090#1100
+    end
   end
   object ActionManager_Main: TActionManager
     ActionBars = <

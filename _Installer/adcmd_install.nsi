@@ -6,7 +6,7 @@
   !define TIMEOUT 3000
   !define SYNC_TERM 0x00100001
   
-  !define MUI_ICON "AppIcon.ico"
+  !define MUI_ICON "AppIcon_install.ico"
   !define MUI_UNICON "AppIcon_uninstall.ico"
   !define MUI_WELCOMEFINISHPAGE_BITMAP "welcome_page.bmp"
 

@@ -5,7 +5,7 @@ interface
 uses
   Winapi.Windows, System.Classes, System.Generics.Collections, System.Generics.Defaults,
   System.SysUtils, System.DateUtils, Winapi.Messages, Vcl.Controls, Vcl.Graphics,
-  Winapi.ActiveX, MSXML2_TLB;
+  System.RegularExpressions, Winapi.ActiveX, MSXML2_TLB;
 
 const
   { Название приложения }
@@ -150,11 +150,18 @@ type
 type
   POrganizationalUnit = ^TOrganizationalUnit;
   TOrganizationalUnit = record
+    name: string;
+    systemFlags: Integer;
     Category: Byte;
     DistinguishedName: string;
     CanonicalName: string;
     Path: string;
     procedure Clear;
+  end;
+
+  TOrganizationalUnitHelper = record helper for TOrganizationalUnit
+    function ExtractName: string;
+    function CanBeDeleted: Boolean;
   end;
 
 type
@@ -320,6 +327,8 @@ end;
 procedure TOrganizationalUnit.Clear;
 begin
   Category := 0;
+  name := '';
+  systemFlags := 0;
   DistinguishedName := '';
   CanonicalName := '';
   Path := '';
@@ -572,6 +581,23 @@ begin
   ID := 0;
   Date := 0;
   Description := '';
+end;
+
+{ TOrganizationalUnitHelper }
+
+function TOrganizationalUnitHelper.CanBeDeleted: Boolean;
+const
+  FLAG_DISALLOW_DELETE = $80000000;
+begin
+  Result := Self.systemFlags and FLAG_DISALLOW_DELETE = 0;
+end;
+
+function TOrganizationalUnitHelper.ExtractName: string;
+var
+  RegEx: TRegEx;
+begin
+  RegEx := TRegEx.Create('(?<=[\\\/])[^\\\/]+$', [roIgnoreCase]);
+  Result := RegEx.Match(Self.CanonicalName).Value
 end;
 
 end.

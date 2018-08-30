@@ -53,7 +53,8 @@ uses
   fmFloatingWindow in 'fmFloatingWindow.pas' {Form_FloatingWindow},
   ADC.UCMAEvents in 'ADC.UCMAEvents.pas',
   ADC.Elevation in 'ADC.Elevation.pas',
-  ADCommander_TLB in '..\ElevationMoniker\ADCommander_TLB.pas';
+  ADCommander_TLB in '..\ElevationMoniker\ADCommander_TLB.pas',
+  fmCreateContainer in 'fmCreateContainer.pas' {Form_CreateContainer};
 
 {$R *.res}
 
@@ -121,6 +122,7 @@ begin
   Application.CreateForm(TForm_ScriptButton, Form_ScriptButton);
   Application.CreateForm(TForm_QuickMessage, Form_QuickMessage);
   Application.CreateForm(TForm_WorkstationInfo, Form_WorkstationInfo);
+  Application.CreateForm(TForm_CreateContainer, Form_CreateContainer);
   { Поиск контроллеров домена и их объектов при запуске программы }
     case apAPI of
       ADC_API_LDAP: Label_API.Caption := 'Lightweight Directory Access Protocol';

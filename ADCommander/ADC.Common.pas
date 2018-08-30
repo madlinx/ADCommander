@@ -59,6 +59,8 @@ procedure ServerBinding(ADcDnsName: string; out ALDAP: PLDAP;
   AOnException: TExceptionProc); overload;
 procedure ServerBinding(ADcName: string; ARootDSE: Pointer;
   AOnException: TExceptionProc); overload;
+function ADCreateUO(ALDAP: PLDAP; AContainer: string; ACN: string): Boolean; overload;
+function ADCreateUO(ARootDSE: IADS; AContainer: string; AName: string): Boolean; overload;
 
 
 implementation
@@ -899,8 +901,14 @@ begin
       end;
       hr := SearchRes.SetSearchPreference(SearchPrefs[0], Length(SearchPrefs));
 
-      SetLength(Attributes, 3);
-      Attributes := ['distinguishedName', 'canonicalName', 'objectCategory'];
+      SetLength(Attributes, 5);
+      Attributes := [
+          'name',
+          'distinguishedName',
+          'canonicalName',
+          'objectCategory',
+          'systemFlags'
+      ];
 
       SearchRes.ExecuteSearch(
         PChar(
@@ -908,6 +916,7 @@ begin
             '(&(ObjectCategory=organizationalUnit)(ou=*))' +
             '(objectCategory=container)' +
             '(objectCategory=builtinDomain)' +
+            '(objectClass=msExchSystemObjectsContainer)' +
           ')'
         ),
         PWideChar(@Attributes[0]),
@@ -924,18 +933,26 @@ begin
           if Succeeded(hr)then
           case i of
             0: begin
-              contData^.DistinguishedName := col.pAdsvalues^.__MIDL____MIDL_itf_ads_0000_00000000.CaseIgnoreString;
+              contData^.name := col.pAdsvalues^.__MIDL____MIDL_itf_ads_0000_00000000.CaseIgnoreString;
             end;
 
             1: begin
+              contData^.DistinguishedName := col.pAdsvalues^.__MIDL____MIDL_itf_ads_0000_00000000.CaseIgnoreString;
+            end;
+
+            2: begin
               outStr := col.pAdsvalues^.__MIDL____MIDL_itf_ads_0000_00000000.CaseIgnoreString;
               contData^.CanonicalName := col.pAdsvalues^.__MIDL____MIDL_itf_ads_0000_00000000.CaseIgnoreString;
             end;
 
-            2: begin
+            3: begin
               if ContainsText(col.pAdsvalues^.__MIDL____MIDL_itf_ads_0000_00000000.CaseIgnoreString, 'container')
                 then contData^.Category := AD_CONTCAT_CONTAINER
                 else contData^.Category := AD_CONTCAT_ORGUNIT
+            end;
+
+            4: begin
+              contData^.systemFlags := col.pAdsvalues^.__MIDL____MIDL_itf_ads_0000_00000000.Integer;
             end;
           end;
           SearchRes.FreeColumn(col);
@@ -957,9 +974,11 @@ end;
 procedure ADEnumContainers(ALDAP: PLDAP; const outList: TStrings);
 const
   AttrArray: array of AnsiString = [
+      'name',
       'distinguishedName',
       'canonicalName',
-      'objectCategory'
+      'objectCategory',
+      'systemFlags'
   ];
 
 var
@@ -977,6 +996,7 @@ var
   ldapAttributes: array of PAnsiChar;
   ldapEntry: PLDAPMessage;
   ldapValues: PPAnsiChar;
+  ldapBinValues: PPLDAPBerVal;
   i: Integer;
   ldapClass: string;
   attr: AnsiString;
@@ -1050,6 +1070,7 @@ begin
         '(&(ObjectCategory=organizationalUnit)(ou=*))' +
         '(objectCategory=container)' +
         '(objectCategory=builtinDomain)' +
+        '(objectClass=msExchSystemObjectsContainer)' +
     ')';
 
     { Постраничный поиск объектов AD }
@@ -1131,25 +1152,48 @@ begin
         for attr in AttrArray do
         begin
           i := 0;
-          ldapValues := ldap_get_values(ALDAP, ldapEntry, PAnsiChar(attr));
           if Assigned(ldapValues) then
-          case IndexText(attr, ['distinguishedName', 'canonicalName', 'objectCategory']) of
+          case IndexText(attr, ['name', 'distinguishedName', 'canonicalName', 'objectCategory', 'systemFlags']) of
             0: begin
-              contData^.DistinguishedName := ldapValues^;
+              ldapValues := ldap_get_values(ALDAP, ldapEntry, PAnsiChar(attr));
+              if ldapValues <> nil
+                then contData^.name := ldapValues^;
+              ldap_value_free(ldapValues);
             end;
 
             1: begin
-              outStr := ldapValues^;
-              contData^.CanonicalName := ldapValues^;
+              ldapValues := ldap_get_values(ALDAP, ldapEntry, PAnsiChar(attr));
+              if ldapValues <> nil
+                then contData^.DistinguishedName := ldapValues^;
+              ldap_value_free(ldapValues);
             end;
 
             2: begin
+              ldapValues := ldap_get_values(ALDAP, ldapEntry, PAnsiChar(attr));
+              if ldapValues <> nil then
+              begin
+                outStr := ldapValues^;
+                contData^.CanonicalName := ldapValues^;
+              end;
+              ldap_value_free(ldapValues);
+            end;
+
+            3: begin
+              ldapValues := ldap_get_values(ALDAP, ldapEntry, PAnsiChar(attr));
+              if ldapValues <> nil then
               if ContainsText(ldapValues^, 'container')
                 then contData^.Category := AD_CONTCAT_CONTAINER
-                else contData^.Category := AD_CONTCAT_ORGUNIT
+                else contData^.Category := AD_CONTCAT_ORGUNIT;
+              ldap_value_free(ldapValues);
+            end;
+
+            4: begin
+              ldapBinValues := ldap_get_values_len(ALDAP, ldapEntry, PAnsiChar(attr));
+              if (ldapBinValues <> nil) and (ldapBinValues^.bv_len > 0)
+                then contData^.systemFlags := StrToIntDef(ldapBinValues^.bv_val, 0);
+              ldap_value_free_len(ldapBinValues);
             end;
           end;
-          ldap_value_free(ldapValues);
         end;
 
         outList.AddObject(outStr, TObject(contData));
@@ -1740,6 +1784,74 @@ begin
   end;
 
   CoUninitialize;
+end;
+
+function ADCreateUO(ALDAP: PLDAP; AContainer: string; ACN: string): Boolean;
+var
+  ldapDN: AnsiString;
+  attrArray: array of PLDAPMod;
+  valClass: array of PAnsiChar;
+  valCN: array of PAnsiChar;
+  valSAMAccountName: array of PAnsiChar;
+  returnCode: ULONG;
+  i: Integer;
+begin
+//  if AContainer.IsEmpty
+//    then Exit;
+//
+//  ldapDN := Format('CN=%s,%s', [ADEscapeReservedCharacters(ACN), AContainer]);
+//
+//  SetLength(valClass, 3);
+//  valClass[0] := PAnsiChar('top');
+//  valClass[1] := PAnsiChar('organizationalUnit');
+//
+//  SetLength(valCN, 2);
+//  valCN[0] := PAnsiChar(AnsiString(ACN));
+//
+//  SetLength(valSAMAccountName, 2);
+//  valSAMAccountName[0] := PAnsiChar(AnsiString(Self.sAMAccountName));
+//
+//  SetLength(attrArray, 3);
+//
+//  New(attrArray[0]);
+//  with attrArray[0]^ do
+//  begin
+//    mod_op       := 0;
+//    mod_type     := PAnsiChar('objectClass');
+//    modv_strvals := @valClass[0];
+//  end;
+//
+//  New(attrArray[1]);
+//  with attrArray[1]^ do
+//  begin
+//    mod_op       := 0;
+//    mod_type     := PAnsiChar('cn');
+//    modv_strvals := @valCN[0];
+//  end;
+//
+//  try
+//    returnCode := ldap_add_ext_s(
+//      ALDAP,
+//      PAnsiChar(ldapDN),
+//      @attrArray[0],
+//      nil,
+//      nil
+//    );
+//
+//    if returnCode <> LDAP_SUCCESS
+//      then raise Exception.Create(ldap_err2string(returnCode));
+//
+//    Result := ldapDN;
+//  finally
+//    for i := Low(attrArray) to High(attrArray) do
+//      if Assigned(attrArray[i])
+//        then Dispose(attrArray[i]);
+//  end;
+end;
+
+function ADCreateUO(ARootDSE: IADS; AContainer: string; AName: string): Boolean;
+begin
+
 end;
 
 end.
