@@ -88,23 +88,23 @@ type
   private
     FCallingForm: TForm;
     FDomainController: TDCInfo;
-    FContainer: TOrganizationalUnit;
+    FContainer: TADContainer;
     FUser: TUserEdit;
     FOnUserCreate: TCreateUserProc;
     procedure SetCallingForm(const Value: TForm);
     procedure OnPageSelect(Sender: TObject);
-    procedure OnTargetContainerSelect(Sender: TObject; ACont: TOrganizationalUnit);
+    procedure OnTargetContainerSelect(Sender: TObject; ACont: TADContainer);
     procedure SetDomainController(const Value: TDCInfo);
     procedure CheckAccountData;
     procedure CheckSecurityData;
     procedure ClearTextFields;
     procedure ClearImage;
-    procedure SetContainer(const Value: TOrganizationalUnit);
+    procedure SetContainer(const Value: TADContainer);
     function CreateUser: Boolean;
   public
     property CallingForm: TForm write SetCallingForm;
     property DomainController: TDCInfo read FDomainController write SetDomainController;
-    property Container: TOrganizationalUnit read FContainer write SetContainer;
+    property Container: TADContainer read FContainer write SetContainer;
     property OnUserCreate: TCreateUserProc read FOnUserCreate write FOnUserCreate;
   end;
 
@@ -182,6 +182,7 @@ const
   msgTemplate = 'Выберите контейнер Active Directory в котором будет %s.';
 begin
   Form_Container.CallingForm := Self;
+  Form_Container.ContainedClass := 'user';
   Form_Container.Description := Format(msgTemplate, ['создана учетная запись пользователя']);
   Form_Container.DomainController := FDomainController;
   Form_Container.DefaultPath := Edit_Container.Text;
@@ -568,7 +569,7 @@ begin
   end;
 end;
 
-procedure TForm_CreateUser.OnTargetContainerSelect(Sender: TObject; ACont: TOrganizationalUnit);
+procedure TForm_CreateUser.OnTargetContainerSelect(Sender: TObject; ACont: TADContainer);
 begin
   SetContainer(ACont);
 
@@ -584,7 +585,7 @@ begin
   OnPageSelect(Self);
 end;
 
-procedure TForm_CreateUser.SetContainer(const Value: TOrganizationalUnit);
+procedure TForm_CreateUser.SetContainer(const Value: TADContainer);
 begin
   FContainer := Value;
   Edit_Container.Text := FContainer.Path;

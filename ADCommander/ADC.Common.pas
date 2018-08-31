@@ -59,9 +59,9 @@ procedure ServerBinding(ADcDnsName: string; out ALDAP: PLDAP;
   AOnException: TExceptionProc); overload;
 procedure ServerBinding(ADcName: string; ARootDSE: Pointer;
   AOnException: TExceptionProc); overload;
-function ADCreateUO(ALDAP: PLDAP; AContainer: string; ANewOU: string): string; overload;
-function ADCreateUO(ARootDSE: IADS; AContainer: string; ANewOU: string): string; overload;
-function ADCreateUODS(ARootDSE: IADS; AContainer: string; ANewOU: string): string;
+function ADCreateOU(ALDAP: PLDAP; AContainer: string; ANewOU: string): string; overload;
+function ADCreateOU(ARootDSE: IADS; AContainer: string; ANewOU: string): string; overload;
+function ADCreateOUDS(ARootDSE: IADS; AContainer: string; ANewOU: string): string;
 function ADDeleteObject(ALDAP: PLDAP; ADN: string): Boolean; overload;
 function ADDeleteObject(ARootDSE: IADS; ADN: string): Boolean; overload;
 function ADDeleteObjectDS(ARootDSE: IADS; ADN: string): Boolean; overload;
@@ -836,13 +836,14 @@ var
   hSearch: THandle;
   Attributes: array of WideString;
   col: ADS_SEARCH_COLUMN;
-  i: Integer;
+  i, j: Integer;
   outStr: string;
-  contData: POrganizationalUnit;
+  contData: PADContainer;
+  AdValue: PAdsValueArray;
 begin
   for i := 0 to outList.Count - 1 do
     if outList.Objects[i] <> nil
-      then Dispose(POrganizationalUnit(outList.Objects[i]));
+      then Dispose(PADContainer(outList.Objects[i]));
 
   outList.Clear;
   CoInitialize(nil);
@@ -906,13 +907,14 @@ begin
       end;
       hr := SearchRes.SetSearchPreference(SearchPrefs[0], Length(SearchPrefs));
 
-      SetLength(Attributes, 5);
+      SetLength(Attributes, 6);
       Attributes := [
           'name',
           'distinguishedName',
           'canonicalName',
           'objectCategory',
-          'systemFlags'
+          'systemFlags',
+          'allowedChildClasses'
       ];
 
       SearchRes.ExecuteSearch(
@@ -934,6 +936,7 @@ begin
         New(contData);
         for i := Low(Attributes) to High(Attributes) do
         begin
+          j := 0;
           hr := SearchRes.GetColumn(LPVOID(hSearch), PWideChar(Attributes[i]), col);
           if Succeeded(hr)then
           case i of
@@ -951,13 +954,23 @@ begin
             end;
 
             3: begin
-              if ContainsText(col.pAdsvalues^.__MIDL____MIDL_itf_ads_0000_00000000.CaseIgnoreString, 'container')
-                then contData^.Category := AD_CONTCAT_CONTAINER
-                else contData^.Category := AD_CONTCAT_ORGUNIT
+              if ContainsText(col.pAdsvalues^.__MIDL____MIDL_itf_ads_0000_00000000.CaseIgnoreString, 'Organizational-Unit')
+                then contData^.Category := AD_CONTCAT_ORGUNIT
+                else contData^.Category := AD_CONTCAT_CONTAINER
             end;
 
             4: begin
               contData^.systemFlags := col.pAdsvalues^.__MIDL____MIDL_itf_ads_0000_00000000.Integer;
+            end;
+
+            5: begin
+              AdValue := PAdsValueArray(col.pADsValues);
+              for j := 0 to col.dwNumValues - 1 do
+              begin
+                if j > 0 then contData^.allowedChildClasses := contData^.allowedChildClasses + ',';
+                contData^.allowedChildClasses := contData^.allowedChildClasses
+                  + string(AdValue^[j].__MIDL____MIDL_itf_ads_0000_00000000.CaseIgnoreString);
+              end;
             end;
           end;
           SearchRes.FreeColumn(col);
@@ -983,7 +996,8 @@ const
       'distinguishedName',
       'canonicalName',
       'objectCategory',
-      'systemFlags'
+      'systemFlags',
+      'allowedChildClasses'
   ];
 
 var
@@ -1006,11 +1020,11 @@ var
   ldapClass: string;
   attr: AnsiString;
   outStr: string;
-  contData: POrganizationalUnit;
+  contData: PADContainer;
 begin
   for i := 0 to outList.Count - 1 do
     if outList.Objects[i] <> nil
-      then Dispose(POrganizationalUnit(outList.Objects[i]));
+      then Dispose(PADContainer(outList.Objects[i]));
 
   outList.Clear;
 
@@ -1158,7 +1172,7 @@ begin
         begin
           i := 0;
           if Assigned(ldapValues) then
-          case IndexText(attr, ['name', 'distinguishedName', 'canonicalName', 'objectCategory', 'systemFlags']) of
+          case IndexText(attr, ['name', 'distinguishedName', 'canonicalName', 'objectCategory', 'systemFlags', 'allowedChildClasses']) of
             0: begin
               ldapValues := ldap_get_values(ALDAP, ldapEntry, PAnsiChar(attr));
               if ldapValues <> nil
@@ -1186,9 +1200,9 @@ begin
             3: begin
               ldapValues := ldap_get_values(ALDAP, ldapEntry, PAnsiChar(attr));
               if ldapValues <> nil then
-              if ContainsText(ldapValues^, 'container')
-                then contData^.Category := AD_CONTCAT_CONTAINER
-                else contData^.Category := AD_CONTCAT_ORGUNIT;
+              if ContainsText(ldapValues^, 'Organizational-Unit')
+                then contData^.Category := AD_CONTCAT_ORGUNIT
+                else contData^.Category := AD_CONTCAT_CONTAINER;
               ldap_value_free(ldapValues);
             end;
 
@@ -1197,6 +1211,20 @@ begin
               if (ldapBinValues <> nil) and (ldapBinValues^.bv_len > 0)
                 then contData^.systemFlags := StrToIntDef(ldapBinValues^.bv_val, 0);
               ldap_value_free_len(ldapBinValues);
+            end;
+
+            5: begin
+              ldapValues := ldap_get_values(ALDAP, ldapEntry, PAnsiChar(attr));
+              if ldapValues <> nil then
+              while ldapValues^ <> nil do
+              begin
+                if i > 0 then contData^.allowedChildClasses := contData^.allowedChildClasses + ',';
+                contData^.allowedChildClasses := contData^.allowedChildClasses + ldapValues^;
+                Inc(ldapValues);
+                Inc(i);
+              end;
+              Dec(ldapValues, i);
+              ldap_value_free(ldapValues);
             end;
           end;
         end;
@@ -1791,7 +1819,7 @@ begin
   CoUninitialize;
 end;
 
-function ADCreateUO(ALDAP: PLDAP; AContainer: string; ANewOU: string): string;
+function ADCreateOU(ALDAP: PLDAP; AContainer: string; ANewOU: string): string;
 var
   ldapDN: AnsiString;
   attrArray: array of PLDAPMod;
@@ -1853,7 +1881,7 @@ begin
   end;
 end;
 
-function ADCreateUO(ARootDSE: IADS; AContainer: string; ANewOU: string): string;
+function ADCreateOU(ARootDSE: IADS; AContainer: string; ANewOU: string): string;
 var
   v: OleVariant;
   hostName: string;
@@ -1904,7 +1932,7 @@ begin
   end;
 end;
 
-function ADCreateUODS(ARootDSE: IADS; AContainer: string; ANewOU: string): string;
+function ADCreateOUDS(ARootDSE: IADS; AContainer: string; ANewOU: string): string;
 var
   v: OleVariant;
   hostName: string;

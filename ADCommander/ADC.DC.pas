@@ -82,7 +82,7 @@ var
   i, j: Integer;
   CanonicalNames, NodeNames: TStringList;
   Node, ParentNode: TTreeNode;
-  ContData: POrganizationalUnit;
+  ContData: PADContainer;
 begin
   ATree.Items.BeginUpdate;
   ATree.Items.Clear;
@@ -119,7 +119,7 @@ begin
       begin
         TmpStr := '';
         New(ContData);
-        ContData^ := POrganizationalUnit(CanonicalNames.Objects[i])^;
+        ContData^ := PADContainer(CanonicalNames.Objects[i])^;
         Node := ATree.Items.AddChildObject(
           ParentNode,
           NodeNames[j],
@@ -146,7 +146,7 @@ begin
   for i := CanonicalNames.Count - 1 downto 0 do
     if CanonicalNames.Objects[i] <> nil then
     begin
-      Dispose(POrganizationalUnit(CanonicalNames.Objects[i]));
+      Dispose(PADContainer(CanonicalNames.Objects[i]));
       CanonicalNames.Objects[i] := nil;
     end;
 

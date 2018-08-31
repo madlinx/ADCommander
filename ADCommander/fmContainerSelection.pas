@@ -24,17 +24,20 @@ type
     FDC: TDCInfo;
     FDefaultPath: string;
     FDescription: string;
-    FSelectedContainer: TOrganizationalUnit;
+    FSelectedContainer: TADContainer;
     FOnContainerSelect: TSelectContainerProc;
+    FContainedClass: string;
     procedure SetCallingForm(const Value: TForm);
     procedure SetDomainController(const Value: TDCInfo);
     procedure OpenContainer(APath: string);
     procedure SetDefaulPath(const Value: string);
     procedure SetDescription(const Value: string);
+    procedure SetContainedClass(const Value: string);
   public
     property CallingForm: TForm write SetCallingForm;
     property DomainController: TDCInfo read FDC write SetDomainController;
     property DefaultPath: string write SetDefaulPath;
+    property ContainedClass: string write SetContainedClass;
     property Description: string read FDescription write SetDescription;
     property OnContainerSelect: TSelectContainerProc read FOnContainerSelect write FOnContainerSelect;
   end;
@@ -66,6 +69,7 @@ procedure TForm_Container.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
   SetDescription('');
   FDefaultPath := '';
+  FContainedClass := '';
   FOnContainerSelect := nil;
   TreeView_Containers.Items.Clear;
   Button_OK.Enabled := False;
@@ -131,6 +135,11 @@ begin
   FCallingForm := Value;
 end;
 
+procedure TForm_Container.SetContainedClass(const Value: string);
+begin
+  FContainedClass := Value;
+end;
+
 procedure TForm_Container.SetDefaulPath(const Value: string);
 begin
   FDefaultPath := Value;
@@ -146,12 +155,19 @@ begin
 end;
 
 procedure TForm_Container.SetDomainController(const Value: TDCInfo);
+var
+  n: TTreeNode;
 begin
   FDC := Value;
   if FDC <> nil
     then FDC.BuildTree(TreeView_Containers);
   if not FDefaultPath.IsEmpty
     then OpenContainer(FDefaultPath);
+
+  if not FContainedClass.IsEmpty
+    then for n in TreeView_Containers.Items do
+    if n.Data <> nil
+      then n.Enabled := (n.IsFirstNode) or (PADContainer(n.Data)^.CanContainClass(FContainedClass));
 end;
 
 procedure TForm_Container.TreeView_ContainersChange(Sender: TObject;
@@ -159,9 +175,9 @@ procedure TForm_Container.TreeView_ContainersChange(Sender: TObject;
 begin
   FSelectedContainer.Clear;
   Button_OK.Enabled := Node <> nil;
-  if Node <> nil then
+  if (Node <> nil) and (Node.Enabled) then
   begin
-    FSelectedContainer := POrganizationalUnit(Node.Data)^;
+    FSelectedContainer := PADContainer(Node.Data)^;
   end;
 end;
 

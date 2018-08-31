@@ -24,16 +24,16 @@ type
     FOnOrganizationalUnitCreate: TCreateOrganizationalUnitProc;
     FCallingForm: TForm;
     FDomainController: TDCInfo;
-    FContainer: TOrganizationalUnit;
+    FContainer: TADContainer;
     procedure ClearTextFields;
     procedure SetCallingForm(const Value: TForm);
-    procedure SetContainer(const Value: TOrganizationalUnit);
+    procedure SetContainer(const Value: TADContainer);
     procedure SetDomainController(const Value: TDCInfo);
-    procedure OnTargetContainerSelect(Sender: TObject; ACont: TOrganizationalUnit);
+    procedure OnTargetContainerSelect(Sender: TObject; ACont: TADContainer);
   public
     property CallingForm: TForm write SetCallingForm;
     property DomainController: TDCInfo read FDomainController write SetDomainController;
-    property Container: TOrganizationalUnit read FContainer write SetContainer;
+    property Container: TADContainer read FContainer write SetContainer;
     property OnOrganizationalUnitCreate: TCreateOrganizationalUnitProc read FOnOrganizationalUnitCreate write FOnOrganizationalUnitCreate;
   end;
 
@@ -56,15 +56,46 @@ end;
 procedure TForm_CreateContainer.Button_OKClick(Sender: TObject);
 var
   res: string;
+  MsgBoxParam: TMsgBoxParams;
 begin
+  try
+    if (Edit_Container.Text = '')
+    or (Edit_Name.Text = '')
+    then raise Exception.Create(
+      'Заполнены не все обязательные поля.' + #13#10 +
+      'Поля "Создать в" и "Имя" должны быть заполнены.'
+    );
 
-  case apAPI of
-    ADC_API_LDAP: begin
-      res := ADCreateUO(LDAPBinding, FContainer.DistinguishedName, Edit_Name.Text);
+    case apAPI of
+      ADC_API_LDAP: begin
+        res := ADCreateOU(LDAPBinding, FContainer.DistinguishedName, Edit_Name.Text);
+      end;
+
+      ADC_API_ADSI: begin
+        res := ADCreateOU(ADSIBinding, FContainer.DistinguishedName, Edit_Name.Text);
+      end;
     end;
-
-    ADC_API_ADSI: begin
-      res := ADCreateUO(ADSIBinding, FContainer.DistinguishedName, Edit_Name.Text);
+  except
+    on E: Exception do
+    begin
+      res := '';
+      with MsgBoxParam do
+      begin
+        cbSize := SizeOf(MsgBoxParam);
+        hwndOwner := Self.Handle;
+        hInstance := 0;
+        case apAPI of
+          ADC_API_LDAP: lpszCaption := PChar('LDAP Exception');
+          ADC_API_ADSI: lpszCaption := PChar('ADSI Exception');
+        end;
+        lpszIcon := MAKEINTRESOURCE(32513);
+        dwStyle := MB_OK or MB_ICONHAND;
+        dwContextHelpId := 0;
+        lpfnMsgBoxCallback := nil;
+        dwLanguageId := LANG_NEUTRAL;
+        lpszText := PChar(E.Message);
+      end;
+      MessageBoxIndirect(MsgBoxParam);
     end;
   end;
 
@@ -80,6 +111,7 @@ const
   msgTemplate = 'Выберите контейнер Active Directory в котором будет %s.';
 begin
   Form_Container.CallingForm := Self;
+  Form_Container.ContainedClass := 'organizationalUnit';
   Form_Container.Description := Format(msgTemplate, ['создана учетная запись пользователя']);
   Form_Container.DomainController := FDomainController;
   Form_Container.DefaultPath := Edit_Container.Text;
@@ -120,7 +152,7 @@ begin
 end;
 
 procedure TForm_CreateContainer.OnTargetContainerSelect(Sender: TObject;
-  ACont: TOrganizationalUnit);
+  ACont: TADContainer);
 begin
   SetContainer(ACont);
 
@@ -134,7 +166,7 @@ begin
   FCallingForm := Value;
 end;
 
-procedure TForm_CreateContainer.SetContainer(const Value: TOrganizationalUnit);
+procedure TForm_CreateContainer.SetContainer(const Value: TADContainer);
 begin
   FContainer := Value;
   Edit_Container.Text := FContainer.Path;

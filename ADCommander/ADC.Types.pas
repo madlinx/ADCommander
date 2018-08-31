@@ -5,7 +5,7 @@ interface
 uses
   Winapi.Windows, System.Classes, System.Generics.Collections, System.Generics.Defaults,
   System.SysUtils, System.DateUtils, Winapi.Messages, Vcl.Controls, Vcl.Graphics,
-  System.RegularExpressions, Winapi.ActiveX, MSXML2_TLB;
+  System.RegularExpressions, Winapi.ActiveX, MSXML2_TLB, ActiveDs_TLB;
 
 const
   { Название приложения }
@@ -111,6 +111,10 @@ type
   TFloatingWindowStyle = (fwsLync, fwsSkype);
 
 type
+  TAdsValueArray = array[0..ANYSIZE_ARRAY-1] of ADSVALUE;
+  PAdsValueArray = ^TAdsValueArray;
+
+type
   TIPAddr = record
     FQDN : string;
     v4   : string;
@@ -148,10 +152,11 @@ type
   end;
 
 type
-  POrganizationalUnit = ^TOrganizationalUnit;
-  TOrganizationalUnit = record
+  PADContainer = ^TADContainer;
+  TADContainer = record
     name: string;
     systemFlags: Integer;
+    allowedChildClasses: string;
     Category: Byte;
     DistinguishedName: string;
     CanonicalName: string;
@@ -159,9 +164,10 @@ type
     procedure Clear;
   end;
 
-  TOrganizationalUnitHelper = record helper for TOrganizationalUnit
+  TOrganizationalUnitHelper = record helper for TADContainer
     function ExtractName: string;
     function CanBeDeleted: Boolean;
+    function CanContainClass(AClass: string): Boolean;
   end;
 
 type
@@ -268,7 +274,7 @@ type
 type
   TProgressProc = procedure (AItem: TObject; AProgress: Integer) of object;
   TExceptionProc = procedure (AMsg: string; ACode: ULONG) of object;
-  TSelectContainerProc = procedure (Sender: TObject; ACont: TOrganizationalUnit) of object;
+  TSelectContainerProc = procedure (Sender: TObject; ACont: TADContainer) of object;
   TCreateUserProc = procedure (Sender: TObject; AOpenEditor: Boolean) of object;
   TChangeComputerProc = procedure (Sender: TObject) of object;
   TChangeUserProc = procedure (Sender: TObject) of object;
@@ -325,7 +331,7 @@ end;
 
 { TOrganizationalUnit }
 
-procedure TOrganizationalUnit.Clear;
+procedure TADContainer.Clear;
 begin
   Category := 0;
   name := '';
@@ -591,6 +597,18 @@ const
   FLAG_DISALLOW_DELETE = $80000000;
 begin
   Result := Self.systemFlags and FLAG_DISALLOW_DELETE = 0;
+end;
+
+function TOrganizationalUnitHelper.CanContainClass(AClass: string): Boolean;
+var
+  valList: TStringList;
+begin
+  valList := TStringList.Create;
+  valList.CaseSensitive := False;
+  valList.Delimiter := ',';
+  valList.DelimitedText := Self.allowedChildClasses;
+  Result := valList.IndexOf(AClass) > -1;
+  valList.Free;
 end;
 
 function TOrganizationalUnitHelper.ExtractName: string;

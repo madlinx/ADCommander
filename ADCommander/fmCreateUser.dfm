@@ -182,10 +182,6 @@ object Form_CreateUser: TForm_CreateUser
     object TabSheet_Account: TTabSheet
       Caption = 'TabSheet_Account'
       TabVisible = False
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object Label_Initials: TLabel
         Left = 418
         Top = 83
@@ -333,10 +329,6 @@ object Form_CreateUser: TForm_CreateUser
       Caption = 'TabSheet_Security'
       ImageIndex = 1
       TabVisible = False
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object Label_PasswordConfirmation: TLabel
         Left = 28
         Top = 58
@@ -402,10 +394,6 @@ object Form_CreateUser: TForm_CreateUser
       Caption = 'TabSheet_PersonalInfo'
       ImageIndex = 2
       TabVisible = False
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object Image: TImage
         Left = 432
         Top = 28
@@ -521,10 +509,6 @@ object Form_CreateUser: TForm_CreateUser
       Caption = 'TabSheet_Confirmation'
       ImageIndex = 3
       TabVisible = False
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object Label_FinishHint: TLabel
         Left = 28
         Top = 16

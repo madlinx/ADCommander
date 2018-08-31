@@ -9,6 +9,10 @@
   !define MUI_ICON "AppIcon_install.ico"
   !define MUI_UNICON "AppIcon_uninstall.ico"
   !define MUI_WELCOMEFINISHPAGE_BITMAP "welcome_page.bmp"
+  #!define MUI_HEADERIMAGE
+  #!define MUI_HEADERIMAGE_RIGHT
+  #!define MUI_HEADERIMAGE_BITMAP "header.bmp"
+  #!define MUI_BGCOLOR "00ADEE"
 
 ;--------------------------------
 ;Include Modern UI

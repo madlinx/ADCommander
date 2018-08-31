@@ -127,6 +127,7 @@ type
     Action_Export_Excel: TAction;
     N3: TMenuItem;
     N4: TMenuItem;
+    Action_CreateOU: TAction;
     procedure ComboBox_DCSelect(Sender: TObject);
     procedure SplitterPaint(Sender: TObject);
     procedure ComboBox_DCDrawItem(Control: TWinControl; Index: Integer;
@@ -190,6 +191,7 @@ type
     procedure N2Click(Sender: TObject);
     procedure Action_Export_AccessExecute(Sender: TObject);
     procedure Action_Export_ExcelExecute(Sender: TObject);
+    procedure Action_CreateOUExecute(Sender: TObject);
   protected
     FAccountListWndProc: TWndMethod;
     procedure WndProc(var Message: TMessage); override;
@@ -223,7 +225,7 @@ type
     procedure OnObjListFilter(Sender: TObject);
     procedure OnADObjectRefresh(Sender: TObject);
     procedure OnSettingsApply(Sender: TObject);
-    procedure OnTargetContainerSelect(Sender: TObject; ACont: TOrganizationalUnit);
+    procedure OnTargetContainerSelect(Sender: TObject; ACont: TADContainer);
     procedure OnMenuItem_CreateUser(Sender: TObject);
     procedure OnMenuItem_CreateContainer(Sender: TObject);
     procedure OnMenuItem_DeleteContainer(Sender: TObject);
@@ -558,13 +560,18 @@ begin
   end;
 end;
 
+procedure TADCmd_MainForm.Action_CreateOUExecute(Sender: TObject);
+begin
+  OnMenuItem_CreateContainer(Self);
+end;
+
 procedure TADCmd_MainForm.Action_CreateUserExecute(Sender: TObject);
 begin
   Form_CreateUser.CallingForm := Self;
   Form_CreateUser.DomainController := SelectedDC;
   if Sender is TMenuItemEx
     then if Assigned(TMenuItemEx(Sender).Data)
-      then Form_CreateUser.Container := POrganizationalUnit(TMenuItemEx(Sender).Data)^;
+      then Form_CreateUser.Container := PADContainer(TMenuItemEx(Sender).Data)^;
   Form_CreateUser.OnUserCreate := Self.OnUserCreate;
   Form_CreateUser.Position := poMainFormCenter;
   Form_CreateUser.Show;
@@ -2160,8 +2167,7 @@ begin
   Form_CreateContainer.OnOrganizationalUnitCreate := OnOrganizationalUnitCreate;
   if Sender is TMenuItemEx
     then if Assigned(TMenuItemEx(Sender).Data)
-      then Form_CreateContainer.Container := POrganizationalUnit(TMenuItemEx(Sender).Data)^;
-//  Form_CreateUser.OnUserCreate := Self.OnUserCreate;
+      then Form_CreateContainer.Container := PADContainer(TMenuItemEx(Sender).Data)^;
   Form_CreateContainer.Position := poMainFormCenter;
   Form_CreateContainer.Show;
   Self.Enabled := False;
@@ -2181,12 +2187,14 @@ var
   MsgBoxParam: TMsgBoxParams;
   msgText: string;
   eventFileName: string;
+  i: Integer;
+  n: TTreeNode;
 begin
   if Sender is TMenuItemEx then if Assigned(TMenuItemEx(Sender).Data) then
   begin
     msgText := Format(msgTemplate, [
-        'контейнер',
-        POrganizationalUnit(TMenuItemEx(Sender).Data)^.name
+        'подразделение',
+        PADContainer(TMenuItemEx(Sender).Data)^.name
     ]);
 
     with MsgBoxParam do
@@ -2212,29 +2220,31 @@ begin
         ADC_API_LDAP: begin
           ADDeleteObject(
             LDAPBinding,
-            POrganizationalUnit(TMenuItemEx(Sender).Data)^.DistinguishedName
+            PADContainer(TMenuItemEx(Sender).Data)^.DistinguishedName
           );
         end;
 
         ADC_API_ADSI: begin
           ADDeleteObjectDS(
             ADSIBinding,
-            POrganizationalUnit(TMenuItemEx(Sender).Data)^.DistinguishedName
+            PADContainer(TMenuItemEx(Sender).Data)^.DistinguishedName
           );
         end;
       end;
 
-
-  //
-  //    eventFileName := apEventsDir + '\' + obj.objectSid + '.xml';
-  //    if FileExists(eventFileName)
-  //      then DeleteFile(eventFileName);
-  //
-  //    ListView_Accounts.Items.Count := ListView_Accounts.Items.Count - 1;
-  //    List_Obj.Remove(obj);
-  //    List_ObjFull.Remove(obj);
-  //    ListView_Accounts.Invalidate;
-  //    ClearStatusBar;
+      for n in TreeView_AD.Items do
+      begin
+        if n.Data <> nil then
+          if CompareText(
+            PADContainer(TMenuItemEx(Sender).Data)^.DistinguishedName,
+            PADContainer(n.Data)^.DistinguishedName
+          ) = 0 then
+          begin
+            n.DeleteChildren;
+            n.Delete;
+            Break;
+          end;
+      end;
     except
       on E: Exception do
       begin
@@ -2485,14 +2495,13 @@ end;
 
 procedure TADCmd_MainForm.OnOrganizationalUnitCreate(ANewDN: string);
 var
-  i: Integer;
   n: TTreeNode;
 begin
   SelectedDC.BuildTree(TreeView_AD);
   for n in TreeView_AD.Items do
   begin
     if n.Data <> nil then
-      if CompareText(ANewDN, POrganizationalUnit(n.Data)^.DistinguishedName) = 0 then
+      if CompareText(ANewDN, PADContainer(n.Data)^.DistinguishedName) = 0 then
       begin
         TreeView_AD.Selected := n;
         Break;
@@ -2540,7 +2549,7 @@ begin
   StatusBar.Repaint;
 end;
 
-procedure TADCmd_MainForm.OnTargetContainerSelect(Sender: TObject; ACont: TOrganizationalUnit);
+procedure TADCmd_MainForm.OnTargetContainerSelect(Sender: TObject; ACont: TADContainer);
 var
   obj: TADObject;
   MsgBoxParam: TMsgBoxParams;
@@ -2946,8 +2955,8 @@ procedure TADCmd_MainForm.TreeView_ADChange(Sender: TObject; Node: TTreeNode);
 begin
   if Node <> nil then
   begin
-    Label_ADPath.Caption := POrganizationalUnit(Node.Data)^.Path;
-    List_ObjFull.Filter.ADPath := POrganizationalUnit(Node.Data)^.Path;
+    Label_ADPath.Caption := PADContainer(Node.Data)^.Path;
+    List_ObjFull.Filter.ADPath := PADContainer(Node.Data)^.Path;
   end;
 end;
 
@@ -2998,6 +3007,7 @@ var
   mi: TMenuItemEx;
 begin
   Node := TreeView_AD.GetNodeAt(X, Y);
+
   if Node <> nil then
   case Button of
     TMouseButton.mbLeft: begin
@@ -3013,14 +3023,16 @@ begin
 
       mi := TMenuItemEx.Create(PopupMenu_TreeAD);
       mi.Caption := 'Учетная запись';
-      mi.Data := POrganizationalUnit(Node.Data);
+      mi.Data := PADContainer(Node.Data);
       mi.OnClick := OnMenuItem_CreateUser;
+      mi.Enabled := (Node.IsFirstNode) or (PADContainer(Node.Data)^.CanContainClass('user'));
       PopupMenu_TreeAD.Items[0].Add(mi);
 
       mi := TMenuItemEx.Create(PopupMenu_TreeAD);
-      mi.Caption := 'Контейнер';
-      mi.Data := POrganizationalUnit(Node.Data);
+      mi.Caption := 'Подразделение';
+      mi.Data := PADContainer(Node.Data);
       mi.OnClick := OnMenuItem_CreateContainer;
+      mi.Enabled := (Node.IsFirstNode) or (PADContainer(Node.Data)^.CanContainClass('organizationalUnit'));
       PopupMenu_TreeAD.Items[0].Add(mi);
 
       mi := TMenuItemEx.Create(PopupMenu_TreeAD);
@@ -3029,9 +3041,9 @@ begin
 
       mi := TMenuItemEx.Create(PopupMenu_TreeAD);
       mi.Caption := 'Удалить';
-      mi.Data := POrganizationalUnit(Node.Data);
+      mi.Data := PADContainer(Node.Data);
       mi.OnClick := OnMenuItem_DeleteContainer;
-      mi.Enabled := (not Node.IsFirstNode) and (POrganizationalUnit(Node.Data)^.CanBeDeleted);
+      mi.Enabled := (not Node.IsFirstNode) and (PADContainer(Node.Data)^.CanBeDeleted);
       PopupMenu_TreeAD.Items.Add(mi);
 
       P := TreeView_AD.ClientToScreen(Point(X, Y));

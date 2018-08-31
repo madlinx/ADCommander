@@ -3,8 +3,8 @@ object Form_CreateContainer: TForm_CreateContainer
   Top = 0
   BorderIcons = [biSystemMenu]
   BorderStyle = bsSingle
-  Caption = #1057#1086#1079#1076#1072#1090#1100' '#1082#1086#1085#1090#1077#1081#1085#1077#1088
-  ClientHeight = 119
+  Caption = #1057#1086#1079#1076#1072#1090#1100' '#1087#1086#1076#1088#1072#1079#1076#1077#1083#1077#1085#1080#1077
+  ClientHeight = 122
   ClientWidth = 429
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -16,7 +16,7 @@ object Form_CreateContainer: TForm_CreateContainer
   OnClose = FormClose
   DesignSize = (
     429
-    119)
+    122)
   PixelsPerInch = 96
   TextHeight = 13
   object Label_Container: TLabel
@@ -28,25 +28,24 @@ object Form_CreateContainer: TForm_CreateContainer
   end
   object Label_Name: TLabel
     Left = 20
-    Top = 50
+    Top = 52
     Width = 23
     Height = 13
     Caption = #1048#1084#1103':'
   end
   object Button_SelectContainer: TButton
-    Left = 8
-    Top = 88
+    Left = 382
+    Top = 18
     Width = 27
     Height = 25
     Caption = '...'
     TabOrder = 0
-    Visible = False
     OnClick = Button_SelectContainerClick
   end
   object Edit_Container: TEdit
     Left = 88
     Top = 20
-    Width = 321
+    Width = 288
     Height = 21
     TabStop = False
     Color = clBtnFace
@@ -55,7 +54,7 @@ object Form_CreateContainer: TForm_CreateContainer
   end
   object Edit_Name: TEdit
     Left = 88
-    Top = 47
+    Top = 49
     Width = 321
     Height = 21
     MaxLength = 64
@@ -63,22 +62,24 @@ object Form_CreateContainer: TForm_CreateContainer
   end
   object Button_Cancel: TButton
     Left = 319
-    Top = 82
+    Top = 85
     Width = 90
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = #1054#1090#1084#1077#1085#1072
     TabOrder = 3
     OnClick = Button_CancelClick
+    ExplicitTop = 82
   end
   object Button_OK: TButton
     Left = 223
-    Top = 82
+    Top = 85
     Width = 90
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = #1054#1050
     TabOrder = 4
     OnClick = Button_OKClick
+    ExplicitTop = 82
   end
 end
