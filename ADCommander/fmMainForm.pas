@@ -2418,9 +2418,19 @@ begin
     obj := List_Obj[ListView_Accounts.Selected.Index];
     Form_Container.CallingForm := Self;
     case obj.ObjectType of
-      otUser: Form_Container.Description := Format(msgTemplate, ['пользователь', obj.name]);
-      otWorkstation: Form_Container.Description := Format(msgTemplate, ['компьютер', obj.name]);
-      else Form_Container.Description := Format(msgTemplate, ['объект', obj.name]);
+      otUser: begin
+        Form_Container.Description := Format(msgTemplate, ['пользователь', obj.name]);
+        Form_Container.ContainedClass := 'user';
+      end;
+
+      otWorkstation: begin
+        Form_Container.Description := Format(msgTemplate, ['компьютер', obj.name]);
+        Form_Container.ContainedClass := 'computer';
+      end
+
+      else begin
+        Form_Container.Description := Format(msgTemplate, ['объект', obj.name]);
+      end;
     end;
     Form_Container.DomainController := SelectedDC;
     Form_Container.DefaultPath := obj.ParentCanonicalName;

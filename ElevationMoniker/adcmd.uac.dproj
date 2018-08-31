@@ -159,8 +159,8 @@
                 </Excluded_Packages>
             </Delphi.Personality>
             <Deployment Version="3">
-                <DeployFile LocalName="Win32\Debug\adcmd_uac.dll" Configuration="Debug" Class="ProjectOutput">
-                    <Platform Name="Win32">
+                <DeployFile LocalName="..\Win64\Release\adcmd.uac.dll" Configuration="Release" Class="ProjectOutput">
+                    <Platform Name="Win64">
                         <RemoteName>adcmd_uac.dll</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
@@ -171,8 +171,8 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="..\Win64\Release\adcmd.uac.dll" Configuration="Release" Class="ProjectOutput">
-                    <Platform Name="Win64">
+                <DeployFile LocalName="Win32\Debug\adcmd_uac.dll" Configuration="Debug" Class="ProjectOutput">
+                    <Platform Name="Win32">
                         <RemoteName>adcmd_uac.dll</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
