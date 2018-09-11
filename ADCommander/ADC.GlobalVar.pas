@@ -23,7 +23,7 @@ var
   LDAPBinding: PLDAP;
   ObjEnum_LDAP: TLDAPEnum;
   ObjEnum_ADSI: TADSIEnum;
-  ObjExport: TADExporter;
+  ObjExport: TADCExporter;
 
   csEnumaration: TCriticalSection;
   csQuickMessage: TCriticalSection;

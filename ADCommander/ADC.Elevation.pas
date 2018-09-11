@@ -75,10 +75,12 @@ function RegisterUCMAComponents(AHandle: HWND; AClassID: PWideChar;
   AElevate: Boolean): HRESULT;
 function UnregisterUCMAComponents(AHandle: HWND; AClassID: PWideChar;
   AElevate: Boolean): HRESULT;
-procedure SaveControlEventsList(AHandle: HWND; AFileName: PWideChar;
-  const AXMLStream: IUnknown; AElevate: Boolean);
-procedure DeleteControlEventsList(AHandle: HWND; AFileName: PWideChar;
-  AElevate: Boolean);
+function SaveControlEventsList(AHandle: HWND; AFileName: PWideChar;
+  const AXMLStream: IUnknown; AElevate: Boolean): HRESULT;
+function DeleteControlEventsList(AHandle: HWND; AFileName: PWideChar;
+  AElevate: Boolean): HRESULT;
+function CreateAccessDatabase(AHandle: HWND; AConnectionString: PWideChar;
+  const AFieldCatalog: IUnknown; AElevate: Boolean): IUnknown;
 
 implementation
 
@@ -210,11 +212,12 @@ begin
   Moniker.UnregisterUCMAComponents(AClassID);
 end;
 
-procedure SaveControlEventsList(AHandle: HWND; AFileName: PWideChar;
-  const AXMLStream: IUnknown; AElevate: Boolean);
+function SaveControlEventsList(AHandle: HWND; AFileName: PWideChar;
+  const AXMLStream: IUnknown; AElevate: Boolean): HRESULT;
 var
   Moniker: IElevationMoniker;
 begin
+  Result := E_FAIL;
   try
     if AElevate then
       { Create elevated COM object instance. }
@@ -239,15 +242,18 @@ begin
       Exit;
     end;
   end;
+
+  Result := S_OK;
 
   Moniker.SaveControlEventsList(AFileName, AXMLStream);
 end;
 
-procedure DeleteControlEventsList(AHandle: HWND; AFileName: PWideChar;
-  AElevate: Boolean);
+function DeleteControlEventsList(AHandle: HWND; AFileName: PWideChar;
+  AElevate: Boolean): HRESULT;
 var
   Moniker: IElevationMoniker;
 begin
+  Result := E_FAIL;
   try
     if AElevate then
       { Create elevated COM object instance. }
@@ -273,7 +279,43 @@ begin
     end;
   end;
 
+  Result := S_OK;
+
   Moniker.DeleteControlEventsList(AFileName);
+end;
+
+function CreateAccessDatabase(AHandle: HWND; AConnectionString: PWideChar;
+  const AFieldCatalog: IUnknown; AElevate: Boolean): IUnknown;
+var
+  Moniker: IElevationMoniker;
+begin
+  Result := nil;
+  try
+    if AElevate then
+      { Create elevated COM object instance. }
+      CoCreateInstanceAsAdmin(
+        AHandle,
+        CLASS_ElevationMoniker,
+        IID_IElevationMoniker,
+        Moniker
+      )
+    else
+      { Create non-elevated COM object instance. }
+      Moniker := CoElevationMoniker.Create;
+  except
+    on E: Exception do begin
+//      MessageBox(
+//        AHandle,
+//        PWideChar(E.Message),
+//        PWideChar('COM object instantiation failed: ' + E.ClassName),
+//        MB_OK or MB_ICONERROR
+//      );
+
+      Exit;
+    end;
+  end;
+
+  Result := Moniker.CreateAccessDatabase(AConnectionString, AFieldCatalog);
 end;
 
 end.

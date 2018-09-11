@@ -154,7 +154,7 @@ var
   hFile: THandle;
 begin
   Result := False;
-  fName := IncludeTrailingBackslash(APath) + 'test.tmp';
+  fName := IncludeTrailingBackslash(APath) + 'adcmd_test.tmp';
 
   hFile := CreateFile(
     PChar(fName),

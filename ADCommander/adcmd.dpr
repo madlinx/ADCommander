@@ -8,14 +8,11 @@ uses
   fmMainForm in 'fmMainForm.pas' {ADCmd_MainForm},
   dmDataModule in 'dmDataModule.pas' {DM1: TDataModule},
   ADC.Common in 'ADC.Common.pas',
-  ADC.Types in 'ADC.Types.pas',
   ADC.Attributes in 'ADC.Attributes.pas',
   ADC.GlobalVar in 'ADC.GlobalVar.pas',
   fmSplash in 'fmSplash.pas' {Form_Splash},
   frSearch in 'frSearch.pas' {Frame_Search: TFrame},
   ADC.ADObject in 'ADC.ADObject.pas',
-  ActiveDs_TLB in 'ActiveDs_TLB.pas',
-  MSXML2_TLB in 'MSXML2_TLB.pas',
   fmSettings in 'fmSettings.pas' {Form_Settings},
   System.SysUtils,
   Vcl.Themes,
@@ -53,8 +50,12 @@ uses
   fmFloatingWindow in 'fmFloatingWindow.pas' {Form_FloatingWindow},
   ADC.UCMAEvents in 'ADC.UCMAEvents.pas',
   ADC.Elevation in 'ADC.Elevation.pas',
+  fmCreateContainer in 'fmCreateContainer.pas' {Form_CreateContainer},
+  MSXML2_TLB in '..\Common\MSXML2_TLB.pas',
   ADCommander_TLB in '..\ElevationMoniker\ADCommander_TLB.pas',
-  fmCreateContainer in 'fmCreateContainer.pas' {Form_CreateContainer};
+  ADOX_TLB in '..\Common\ADOX_TLB.pas',
+  ActiveDs_TLB in '..\Common\ActiveDs_TLB.pas',
+  ADC.Types in '..\Common\ADC.Types.pas';
 
 {$R *.res}
 

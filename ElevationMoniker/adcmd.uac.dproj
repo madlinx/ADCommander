@@ -131,7 +131,11 @@
             <CoClasses>ADCElevationMoniker</CoClasses>
         </DCCReference>
         <DCCReference Include="ElevationMonikerFactory.pas"/>
-        <DCCReference Include="..\ADCommander\MSXML2_TLB.pas"/>
+        <DCCReference Include="..\Common\MSXML2_TLB.pas"/>
+        <DCCReference Include="..\ADCommander\ADC.Attributes.pas"/>
+        <DCCReference Include="..\Common\ActiveDs_TLB.pas"/>
+        <DCCReference Include="..\Common\ADC.Types.pas"/>
+        <DCCReference Include="..\Common\ADOX_TLB.pas"/>
         <RidlCompile Include="ADCmdUAC.ridl"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>

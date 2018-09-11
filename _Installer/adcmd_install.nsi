@@ -183,6 +183,7 @@
       Goto CheckRebootRequest
  
     DoNetworkInstallation:
+      MessageBox MB_YESNO|MB_ICONQUESTION|MB_SETFOREGROUND "Приложению ${APP_NAME} требуется компонент Microsoft .NET Framework v$RequiredVersion.$\r$\n$\r$\nСкачать и установить этот компонент сейчас?" /SD IDNO IDYES 0 IDNO Completed
       # Now, let's Download the .NET Framework
       DetailPrint "Загрузка Microsoft .NET Framework v$RequiredVersion..."
       NSISdl::download "https://download.microsoft.com/download/2/0/E/20E90413-712F-438C-988E-FDAA79A8AC3D/dotnetfx35.exe" "$TEMP\dotnetfx35.exe"

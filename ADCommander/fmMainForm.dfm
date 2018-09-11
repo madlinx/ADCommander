@@ -438,7 +438,6 @@ object ADCmd_MainForm: TADCmd_MainForm
             ShowCaption = False
           end>
         ActionBar = ActionToolBar_Acc
-        AutoSize = False
       end>
     Images = DM1.ImageList_Main
     Left = 264

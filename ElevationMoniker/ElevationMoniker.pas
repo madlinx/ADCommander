@@ -6,8 +6,8 @@ interface
 
 uses
   Winapi.Windows, Winapi.ActiveX, System.Classes, System.Win.ComObj, ADCommander_TLB,
-  System.SysUtils, System.Win.Registry, System.Win.ComServ, ElevationMonikerFactory,
-  MSXML2_TLB;
+  System.SysUtils, System.Win.Registry, System.Variants, Vcl.AxCtrls, ADOX_TLB,
+  ElevationMonikerFactory, MSXML2_TLB, ADC.Types, ADC.Attributes;
 
 type
   TADCElevationMoniker = class(TTypedComObject, IElevationMoniker)
@@ -18,11 +18,115 @@ type
     procedure UnregisterUCMAComponents(AClassID: PWideChar); safecall;
     procedure SaveControlEventsList(AFileName: PWideChar; const AXMLStream: IUnknown); safecall;
     procedure DeleteControlEventsList(AFileName: PWideChar); safecall;
+    function CreateAccessDatabase(AConnectionString: PWideChar;
+      const AFieldCatalog: IUnknown): IUnknown; safecall;
+  public
+
   end;
 
 implementation
 
+uses System.Win.ComServ;
+
 { TADCElevationMoniker }
+
+function TADCElevationMoniker.CreateAccessDatabase(AConnectionString: PWideChar;
+  const AFieldCatalog: IUnknown): IUnknown;
+var
+  AttrCatalog: TAttrCatalog;
+  OleStream: TOleStream;
+  a: PADAttribute;
+  oCatalog: Catalog;
+  oTable: Table;
+  oIndex: Index;
+begin
+  OleStream := TOLEStream.Create((AFieldCatalog as IStream));
+  AttrCatalog := TAttrCatalog.Create();
+  AttrCatalog.LoadFromStream(OleStream);
+  try
+    oCatalog := CoCatalog.Create;
+    oCatalog.Create(string(AConnectionString));
+
+    // Users
+    oTable := CoTable.Create;;
+    oTable.ParentCatalog := oCatalog;
+    oTable.Name := 'Users';
+    oTable.Columns.Append('UserID', adInteger, 0);
+    oTable.Columns['UserID'].Properties['AutoIncrement'].Value := True;
+    for a in AttrCatalog do
+    begin
+      if a^.Visible then
+      begin
+        oTable.Columns.Append(a^.Title, adInteger, 0);
+      end;
+    end;
+
+    oIndex := CoIndex.Create;
+    oIndex.Name := 'ObjectID';
+    oIndex.Unique := True;
+    oIndex.PrimaryKey := True;
+    oIndex.Columns.Append('UserID', adInteger, 0);
+
+    oTable.Indexes.Append(oIndex, Null);
+
+    oCatalog.Tables.Append(oTable);
+
+    // Groups
+    oTable := CoTable.Create;;
+    oTable.ParentCatalog := oCatalog;
+    oTable.Name := 'Groups';
+    oTable.Columns.Append('GroupID', adInteger, 0);
+    oTable.Columns['GroupID'].Properties['AutoIncrement'].Value := True;
+    for a in AttrCatalog do
+    begin
+      if a^.Visible then
+      begin
+        oTable.Columns.Append(a^.Title, adInteger, 0);
+      end;
+    end;
+
+    oIndex := CoIndex.Create;
+    oIndex.Name := 'ObjectID';
+    oIndex.Unique := True;
+    oIndex.PrimaryKey := True;
+    oIndex.Columns.Append('GroupID', adInteger, 0);
+
+    oTable.Indexes.Append(oIndex, Null);
+
+    oCatalog.Tables.Append(oTable);
+
+    // Computers
+    oTable := CoTable.Create;;
+    oTable.ParentCatalog := oCatalog;
+    oTable.Name := 'Computers';
+    oTable.Columns.Append('ComputerID', adInteger, 0);
+    oTable.Columns['ComputerID'].Properties['AutoIncrement'].Value := True;
+    for a in AttrCatalog do
+    begin
+      if a^.Visible then
+      begin
+        oTable.Columns.Append(a^.Title, adInteger, 0);
+      end;
+    end;
+
+    oIndex := CoIndex.Create;
+    oIndex.Name := 'ObjectID';
+    oIndex.Unique := True;
+    oIndex.PrimaryKey := True;
+    oIndex.Columns.Append('ComputerID', adInteger, 0);
+
+    oTable.Indexes.Append(oIndex, Null);
+
+    oCatalog.Tables.Append(oTable);
+
+    Result := oCatalog;
+  finally
+    oIndex := nil;
+    oTable := nil;
+    OleStream.Free;
+    AttrCatalog.Free;
+  end;
+end;
 
 procedure TADCElevationMoniker.DeleteControlEventsList(AFileName: PWideChar);
 begin

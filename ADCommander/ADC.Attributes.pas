@@ -46,10 +46,13 @@ type
     function ItemByID(ID: Integer): PADAttribute;
     function ItemByProperty(APropertyName: string): PADAttribute;
     function VisibleCount: Integer;
+    function AsIStream: IStream;
     procedure Clear; override;
     procedure LoadDefaults;
     procedure LoadFromFile(AFileName: TFileName);
     procedure SaveToFile(AFileName: TFileName; ARaiseEvent: Boolean = False);
+    procedure LoadFromStream(AStream: TStream);
+    procedure SaveToStream(AStream: TStream);
     property Items[Index: Integer]: PADAttribute read Get; default;
     property OnSave: TNotifyEvent read FOnSave write FOnSave;
   end;
@@ -156,6 +159,24 @@ end;
 function TAttrCatalog.Add(Value: PADAttribute): Integer;
 begin
   Result := inherited Add(Value);
+end;
+
+function TAttrCatalog.AsIStream: IStream;
+var
+  CatatalogStream: TStream;
+  AdapterStream: TStreamAdapter;
+  StreamPos: LargeUInt;
+begin
+  CatatalogStream := TMemoryStream.Create;
+
+  try
+    Self.SaveToStream(CatatalogStream);
+    AdapterStream := TStreamAdapter.Create(CatatalogStream, soOwned);
+    AdapterStream.Seek(0, 0, StreamPos);
+    Result := AdapterStream as IStream;
+  finally
+
+  end;
 end;
 
 procedure TAttrCatalog.Clear;
@@ -692,6 +713,25 @@ begin
     then LoadDefaults;
 end;
 
+procedure TAttrCatalog.LoadFromStream(AStream: TStream);
+var
+  a: PADAttribute;
+begin
+  Self.Clear;
+
+  try
+    AStream.Position := 0;
+    while AStream.Position < AStream.Size do
+    begin
+      New(a);
+      AStream.Read(a^, SizeOf(TADAttribute));
+      Self.Add(a);
+    end;
+  except
+
+  end;
+end;
+
 procedure TAttrCatalog.SaveToFile(AFileName: TFileName; ARaiseEvent: Boolean);
 var
   i: Integer;
@@ -719,6 +759,21 @@ begin
 
   CloseFile(f);
   {$i+}
+end;
+
+procedure TAttrCatalog.SaveToStream(AStream: TStream);
+var
+  i: Integer;
+  l: TAttrCatalog;
+begin
+  try
+    for i := 0 to Self.Count - 1 do
+    begin
+      AStream.WriteBuffer(Self[i]^, SizeOf(TADAttribute));
+    end;
+  except
+
+  end;
 end;
 
 function TAttrCatalog.VisibleCount: Integer;

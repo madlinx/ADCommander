@@ -214,7 +214,7 @@ type
     procedure SetInfoColumnWidth;
     procedure AllignStatusBarPanels;
     procedure SetComboBoxDropDownWidth(AComboBox: TComboBox; AMargin: Word = 0);
-    procedure ExecuteDataExport(AFormat: TADExportFormat; AFileName: TFileName);
+    procedure ExecuteDataExport(AFormat: TADCExportFormat; AFileName: TFileName);
     procedure OnInPlaceEditExit(Sender: TObject);
     procedure OnEnumerationProgress(AItem: TObject; AProgress: Integer);
     procedure OnEnumerationException(AMsg: string; ACode: ULONG);
@@ -621,7 +621,7 @@ var
   fExt: string;
   fName: TFileName;
   msgBox: TMsgBoxParams;
-  eFormat: TADExportFormat;
+  eFormat: TADCExportFormat;
 begin
   lstProviders := TStringList.Create;
 
@@ -670,8 +670,6 @@ begin
       if ExtractFileExt(fName) = ''
         then fName := fName + fExt;
 
-//      raise Exception.Create('Функция экспорта в Microsoft Access находится в разработке.');
-
       ExecuteDataExport(eFormat, fName);
     end
   except
@@ -707,7 +705,7 @@ var
   fExt: string;
   fName: TFileName;
   msgBox: TMsgBoxParams;
-  eFormat: TADExportFormat;
+  eFormat: TADCExportFormat;
 begin
   try
     if List_Obj.Count = 0
@@ -1295,11 +1293,11 @@ begin
   end;
 end;
 
-procedure TADCmd_MainForm.ExecuteDataExport(AFormat: TADExportFormat;
+procedure TADCmd_MainForm.ExecuteDataExport(AFormat: TADCExportFormat;
   AFileName: TFileName);
 begin
   case apAPI of
-    ADC_API_LDAP: ObjExport := TADExporter.Create(
+    ADC_API_LDAP: ObjExport := TADCExporter.Create(
       LDAPBinding,
       List_Obj,
       List_Attributes,
@@ -1311,7 +1309,7 @@ begin
       True
     );
 
-    ADC_API_ADSI: ObjExport := TADExporter.Create(
+    ADC_API_ADSI: ObjExport := TADCExporter.Create(
       ADSIBinding,
       List_Obj,
       List_Attributes,

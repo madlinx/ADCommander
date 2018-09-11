@@ -162,7 +162,6 @@
             <DesignClass>TDataModule</DesignClass>
         </DCCReference>
         <DCCReference Include="ADC.Common.pas"/>
-        <DCCReference Include="ADC.Types.pas"/>
         <DCCReference Include="ADC.Attributes.pas"/>
         <DCCReference Include="ADC.GlobalVar.pas"/>
         <DCCReference Include="fmSplash.pas">
@@ -173,8 +172,6 @@
             <DesignClass>TFrame</DesignClass>
         </DCCReference>
         <DCCReference Include="ADC.ADObject.pas"/>
-        <DCCReference Include="ActiveDs_TLB.pas"/>
-        <DCCReference Include="MSXML2_TLB.pas"/>
         <DCCReference Include="fmSettings.pas">
             <Form>Form_Settings</Form>
         </DCCReference>
@@ -255,11 +252,15 @@
         </DCCReference>
         <DCCReference Include="ADC.UCMAEvents.pas"/>
         <DCCReference Include="ADC.Elevation.pas"/>
-        <DCCReference Include="..\ElevationMoniker\ADCommander_TLB.pas"/>
         <DCCReference Include="fmCreateContainer.pas">
             <Form>Form_CreateContainer</Form>
             <FormType>dfm</FormType>
         </DCCReference>
+        <DCCReference Include="..\Common\MSXML2_TLB.pas"/>
+        <DCCReference Include="..\ElevationMoniker\ADCommander_TLB.pas"/>
+        <DCCReference Include="..\Common\ADOX_TLB.pas"/>
+        <DCCReference Include="..\Common\ActiveDs_TLB.pas"/>
+        <DCCReference Include="..\Common\ADC.Types.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>

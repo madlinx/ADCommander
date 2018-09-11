@@ -12,7 +12,7 @@ unit ADCommander_TLB;
 // ************************************************************************ //
 
 // $Rev: 52393 $
-// File generated on 28.08.2018 11:52:53 from Type Library described below.
+// File generated on 11.09.2018 16:30:43 from Type Library described below.
 
 // ************************************************************************  //
 // Type Lib: D:\Projects\ADCommander\ElevationMoniker\ADCmdUAC (1)
@@ -67,12 +67,6 @@ type
 
 
 // *********************************************************************//
-// Declaration of structures, unions and aliases.
-// *********************************************************************//
-  POleVariant1 = ^OleVariant; {*}
-
-
-// *********************************************************************//
 // Interface: IElevationMoniker
 // Flags:     (320) Dual OleAutomation
 // GUID:      {44B30677-801B-406F-9925-6CB4A2E9B12D}
@@ -83,6 +77,7 @@ type
     procedure UnregisterUCMAComponents(AClassID: PWideChar); safecall;
     procedure SaveControlEventsList(AFileName: PWideChar; const AXMLStream: IUnknown); safecall;
     procedure DeleteControlEventsList(AFileName: PWideChar); safecall;
+    function CreateAccessDatabase(AConnectionString: PWideChar; const AFieldCatalog: IUnknown): IUnknown; safecall;
   end;
 
 // *********************************************************************//
@@ -97,6 +92,8 @@ type
     procedure SaveControlEventsList(AFileName: {NOT_OLEAUTO(PWideChar)}OleVariant;
                                     const AXMLStream: IUnknown); dispid 103;
     procedure DeleteControlEventsList(AFileName: {NOT_OLEAUTO(PWideChar)}OleVariant); dispid 104;
+    function CreateAccessDatabase(AConnectionString: {NOT_OLEAUTO(PWideChar)}OleVariant;
+                                  const AFieldCatalog: IUnknown): IUnknown; dispid 105;
   end;
 
 // *********************************************************************//
