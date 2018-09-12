@@ -24,7 +24,8 @@ type
   public
     class procedure SmoothResize(Src, Dst: TBitmap);
     class procedure OpenImage_JPEG(AFileName: string; AJpeg: TJPEGImage);
-    class function ImageToByteArray(ABitmap: TBitmap; outByteArray: PImgByteArray): Boolean;
+    class function ImageToByteArray(AJPEG: TJPEGImage; outByteArray: PImgByteArray): Boolean; overload;
+    class function ImageToByteArray(ABitmap: TBitmap; outByteArray: PImgByteArray): Boolean; overload;
     class function ByteArrayToImage(ABytes: TImgByteArray; outBitmap: TBitmap): Boolean; overload;
     class function ByteArrayToImage(ABytes: OleVariant; outBitmap: TBitmap): Boolean; overload;
     class function ByteArrayToImage(ABytes: PSafeArray; outBitmap: TBitmap): Boolean; overload;
@@ -461,6 +462,19 @@ begin
   finally
     B.Free;
     CloseThemeData(hT);
+  end;
+end;
+
+class function TImgProcessor.ImageToByteArray(AJPEG: TJPEGImage; outByteArray: PImgByteArray): Boolean;
+var
+  b: TBitmap;
+begin
+  b := TBitmap.Create;
+  try
+    b.Assign(AJPEG);
+    Result := ImageToByteArray(b, outByteArray);
+  finally
+    b.Free;
   end;
 end;
 

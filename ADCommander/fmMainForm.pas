@@ -234,6 +234,8 @@ type
     procedure OnComputerChange(Sender: TObject);
     procedure OnPasswordChange(Sender: TObject; AChangeOnLogon: Boolean);
     procedure OnOrganizationalUnitCreate(ANewDN: string);
+    procedure OnDataExportProgress(AItem: TObject; AProgress: Integer);
+    procedure OnDataExportException(AMsg: string; ACode: ULONG);
   public
     { Public declarations }
     procedure UpdateDCList;
@@ -1298,26 +1300,28 @@ procedure TADCmd_MainForm.ExecuteDataExport(AFormat: TADCExportFormat;
 begin
   case apAPI of
     ADC_API_LDAP: ObjExport := TADCExporter.Create(
+      Self.Handle,
       LDAPBinding,
       List_Obj,
       List_Attributes,
       AFormat,
       AFileName,
       csExport,
-      nil,
-      nil,
+      OnDataExportProgress,
+      OnDataExportException,
       True
     );
 
     ADC_API_ADSI: ObjExport := TADCExporter.Create(
+      Self.Handle,
       ADSIBinding,
       List_Obj,
       List_Attributes,
       AFormat,
       AFileName,
       csExport,
-      nil,
-      nil,
+      OnDataExportProgress,
+      OnDataExportException,
       True
     );
   end;
@@ -2650,6 +2654,17 @@ begin
       ADC_API_ADSI: TADObject(Sender).Refresh(ADSIBinding, List_Attributes);
     end;
   end;
+end;
+
+procedure TADCmd_MainForm.OnDataExportException(AMsg: string; ACode: ULONG);
+begin
+  ShowMessage(AMsg);
+end;
+
+procedure TADCmd_MainForm.OnDataExportProgress(AItem: TObject;
+  AProgress: Integer);
+begin
+
 end;
 
 procedure TADCmd_MainForm.OnUserChange(Sender: TObject);

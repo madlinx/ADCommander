@@ -5,8 +5,9 @@ interface
 uses
   System.Classes, System.SysUtils, System.SyncObjs, Winapi.Windows, System.Win.ComObj,
   Winapi.ActiveX, System.IOUtils, System.Variants, Data.DB, Data.Win.ADODB, ActiveDs_TLB,
-  Vcl.Imaging.jpeg, ADC.Types, ADC.AD, ADC.LDAP, ADC.ADObject, ADC.ADObjectList,
-  ADC.Attributes, ADC.ExcelEnum, ADC.Common, ADOX_TLB, ADC.Elevation;
+  Vcl.Imaging.jpeg, ADC.Types, ADC.AD, ADC.LDAP, ADC.ADObject, System.TypInfo, System.AnsiStrings,
+  ADC.ADObjectList, ADC.Attributes, ADC.ExcelEnum, ADC.Common, ADOX_TLB, ADC.Elevation,
+  ADC.ImgProcessor;
 
 const
   DB_PROVIDER_JET = 'Microsoft.Jet.OLEDB.4.0';
@@ -25,6 +26,7 @@ type
 type
   TADCExporter = class(TThread)
   private
+    FOwner: HWND;
     FAPI: Integer;
     FLDAP: PLDAP;
     FRootDSE: IADs;
@@ -37,10 +39,6 @@ type
     FExceptionProc: TExceptionProc;
 
     FDBConnectionString: string;
-    FDBConnection: TADOConnection;
-    FDBCommand: TADOCommand;
-    FDBTabGroups: TADOTable;
-    FDBTabObjects: TADOTable;
     FObj: TADObject;
     FProgressValue: Integer;
     FExceptionCode: ULONG;
@@ -58,11 +56,11 @@ type
   protected
     procedure Execute; override;
   public
-    constructor Create(ARootDSE: IADs; ASourceList: TADObjectList<TADObject>;
+    constructor Create(AOwner: HWND; ARootDSE: IADs; ASourceList: TADObjectList<TADObject>;
       AAttrCatalog: TAttrCatalog; AFormat: TADCExportFormat; AFileName: TFileName;
       ASyncObject: TCriticalSection; AProgressProc: TProgressProc; AExceptionProc: TExceptionProc;
       CreateSuspended: Boolean = False); reintroduce; overload;
-    constructor Create(ALDAP: PLDAP; ASourceList: TADObjectList<TADObject>;
+    constructor Create(AOwner: HWND; ALDAP: PLDAP; ASourceList: TADObjectList<TADObject>;
       AAttrCatalog: TAttrCatalog; AFormat: TADCExportFormat; AFileName: TFileName;
       ASyncObject: TCriticalSection; AProgressProc: TProgressProc; AExceptionProc: TExceptionProc;
       CreateSuspended: Boolean = False); reintroduce; overload;
@@ -74,7 +72,7 @@ implementation
 
 { TADExporter }
 
-constructor TADCExporter.Create(ARootDSE: IADs; ASourceList: TADObjectList<TADObject>;
+constructor TADCExporter.Create(AOwner: HWND; ARootDSE: IADs; ASourceList: TADObjectList<TADObject>;
   AAttrCatalog: TAttrCatalog; AFormat: TADCExportFormat; AFileName: TFileName;
   ASyncObject: TCriticalSection; AProgressProc: TProgressProc; AExceptionProc: TExceptionProc;
   CreateSuspended: Boolean = False);
@@ -84,6 +82,7 @@ begin
   if (ARootDSE = nil) or (ASourceList = nil)
     then Self.Terminate;
 
+  FOwner         := AOwner;
   FAPI           := ADC_API_ADSI;
   FLDAP          := nil;
   FRootDSE       := ARootDSE;
@@ -158,29 +157,6 @@ begin
 
   CoUninitialize;
 
-  if FDBTabGroups <> nil then
-  begin
-    FDBTabGroups.Close;
-    FDBTabGroups.Free;
-  end;
-
-  if FDBTabObjects <> nil then
-  begin
-    FDBTabObjects.Close;
-    FDBTabObjects.Free;
-  end;
-
-  if FDBCommand <> nil then
-  begin
-    FDBCommand.Free;
-  end;
-
-  if FDBConnection <> nil then
-  begin
-    FDBConnection.Close;
-    FDBConnection.Free;
-  end;
-
   if FSyncObject <> nil then
   begin
     FSyncObject.Leave;
@@ -188,7 +164,7 @@ begin
   end;
 end;
 
-constructor TADCExporter.Create(ALDAP: PLDAP; ASourceList: TADObjectList<TADObject>;
+constructor TADCExporter.Create(AOwner: HWND; ALDAP: PLDAP; ASourceList: TADObjectList<TADObject>;
   AAttrCatalog: TAttrCatalog; AFormat: TADCExportFormat; AFileName: TFileName;
   ASyncObject: TCriticalSection; AProgressProc: TProgressProc; AExceptionProc: TExceptionProc;
   CreateSuspended: Boolean = False);
@@ -198,6 +174,7 @@ begin
   if (ALDAP = nil) or (ASourceList = nil)
     then Self.Terminate;
 
+  FOwner         := AOwner;
   FAPI           := ADC_API_LDAP;
   FLDAP          := ALDAP;
   FRootDSE       := nil;
@@ -251,25 +228,8 @@ begin
   end;
 
   try
-//    if FFileName = ''
-//      then raise Exception.Create('Невозможно создать файл, либо указано неверное имя файла.');
-
     case FFormat of
       efAccess..efAccess2007: begin
-//        FDBConnection := TADOConnection.Create(nil);
-//        FDBConnection.ConnectionString := DBConnectionStr;
-//
-//        FDBCommand := TADOCommand.Create(nil);
-//        FDBCommand.Connection := FDBConnection;
-//
-//        FDBTabObjects := TADOTable.Create(nil);
-//        FDBTabObjects.TableName := 'OBJECTS';
-//        FDBTabObjects.Connection := FDBConnection;
-//
-//        FDBTabGroups := TADOTable.Create(nil);
-//        FDBTabGroups.TableName := 'GROUPS';
-//        FDBTabGroups.Connection := FDBConnection;
-
         DoDataExport_Access;
       end;
 
@@ -293,45 +253,101 @@ end;
 
 procedure TADCExporter.DoDataExport_Access;
 var
-  sConn: string;
-  ICat: IDispatch;
   oCatalog: Catalog;
+  oConnection: OleVariant;
+  sTableName: string;
+  sFieldValues: string;
+  sValue: string;
+  a: PADAttribute;
   i: Integer;
+  j: Integer;
   o: TADObject;
+  thumbnailPhoto: TImgByteArray;
 begin
   oCatalog := CreateAccessDatabase(
-    0,
+    FOwner,
     PChar(FDBConnectionString),
     FAttrCat.AsIStream,
     IsCreateFileElevationRequired(ExtractFileDir(FFileName))
   ) as Catalog;
 
+  if oCatalog = nil then
+  begin
+    Self.Terminate;
+    Exit;
+  end;
+
+  oConnection := oCatalog.Get_ActiveConnection;
+
+  i := 0;
+  for o in FSrc do
+  begin
+    if Terminated then Break;
+
+    FObj := o;
+
+    // Определяем имя таблицы для вывода значений
+    if o.IsUser
+      then sTableName := 'Users'
+    else if o.IsGroup
+      then sTableName := 'Groups'
+    else sTableName := 'Computers';
+
+    // Формируем строку заначений
+    j := 0;
+    for a in FAttrCat do
+    begin
+      if not a^.Visible then Continue;
+      Inc(j);
+      case IndexText(a^.Name,
+        [
+          'lastLogon',             { 0 }
+          'pwdLastSet',            { 1 }
+          'badPwdCount',           { 2 }
+          'groupType',             { 3 }
+          'userAccountControl',    { 4 }
+          'primaryGroupToken',     { 5 }
+          'thumbnailPhoto'         { 6 }
+        ]
+      ) of
+        0: if o.lastLogon > 0
+             then sValue := QuotedStr(FormatDateTime('yyyy-mm-dd hh:nn:ss', o.lastLogon))
+             else sValue := 'Null';
+        1: if o.passwordExpiration > 0
+             then sValue := QuotedStr(FormatDateTime('yyyy-mm-dd hh:nn:ss', o.passwordExpiration))
+             else sValue := 'Null';
+        2: sValue := QuotedStr(IntToStr(o.badPwdCount));
+        3: sValue := QuotedStr(IntToStr(o.groupType));
+        4: sValue := QuotedStr(IntToStr(o.userAccountControl));
+        5: sValue := QuotedStr(IntToStr(o.primaryGroupToken));
+        6: sValue := 'Null'
+//        6: if o.thumbnailFileSize = 0 then sValue := 'Null' else
+//           begin
+//             TImgProcessor.ImageToByteArray(o.thumbnailPhoto, @thumbnailPhoto);
+//             sValue := '0x' + thumbnailPhoto.AsBinString;
+//             SetLength(thumbnailPhoto, 0);
+//           end
+        else sValue := QuotedStr(GetPropValue(o, a^.ObjProperty, True));
+      end;
 
 
-//  FDBConnection.Open;
-//
-//  FDBTabObjects.Open;
-//  FDBTabObjects.Insert;
-//
-//  FDBTabGroups.Open;
-//  FDBTabGroups.Insert;
-//
-//  i := 0;
-//
-//  for o in FSrc do
-//  begin
-//    if Terminated then Break;
-//
-//    FObj := o;
-//
-//    FDBTabObjects.FieldByName('name').AsString := o.name;
-//
-//    FDBTabObjects.Append;
-//
-//    i := i + 1;
-//    DoProgress(Trunc(i * FSrc.Count / 100));
-//  end;
 
+      if j = 1
+        then sFieldValues := Format('%s', [sValue])
+        else sFieldValues := sFieldValues + Format(',%s', [sValue]);
+    end;
+
+    // Вставялем запись в таблицу
+    oConnection.Execute(
+      Format('INSERT INTO %s VALUES (%s)', [sTableName, sFieldValues])
+    );
+
+    i := i + 1;
+    DoProgress(Trunc(i * FSrc.Count / 100));
+  end;
+
+  oConnection.Close;
+  oConnection := Null;
   oCatalog := nil;
 end;
 

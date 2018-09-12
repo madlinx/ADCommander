@@ -6,13 +6,16 @@ interface
 
 uses
   Winapi.Windows, Winapi.ActiveX, System.Classes, System.Win.ComObj, ADCommander_TLB,
-  System.SysUtils, System.Win.Registry, System.Variants, Vcl.AxCtrls, ADOX_TLB,
-  ElevationMonikerFactory, MSXML2_TLB, ADC.Types, ADC.Attributes;
+  System.SysUtils, System.Win.Registry, System.Variants, Vcl.AxCtrls, System.AnsiStrings,
+  System.StrUtils, ADOX_TLB, ElevationMonikerFactory, MSXML2_TLB, ADC.Types, ADC.Attributes;
 
 type
   TADCElevationMoniker = class(TTypedComObject, IElevationMoniker)
   private
     const KEY_WOW64: array [0..1] of DWORD = (KEY_WOW64_32KEY, KEY_WOW64_64KEY);
+  private
+    procedure GenerateFields(ATable: Table; const AFieldCatalog: IUnknown;
+      APrimaryKeyName: string); overload;
   protected
     procedure RegisterUCMAComponents(AClassID: PWideChar); safecall;
     procedure UnregisterUCMAComponents(AClassID: PWideChar); safecall;
@@ -33,16 +36,10 @@ uses System.Win.ComServ;
 function TADCElevationMoniker.CreateAccessDatabase(AConnectionString: PWideChar;
   const AFieldCatalog: IUnknown): IUnknown;
 var
-  AttrCatalog: TAttrCatalog;
-  OleStream: TOleStream;
-  a: PADAttribute;
   oCatalog: Catalog;
   oTable: Table;
-  oIndex: Index;
 begin
-  OleStream := TOLEStream.Create((AFieldCatalog as IStream));
-  AttrCatalog := TAttrCatalog.Create();
-  AttrCatalog.LoadFromStream(OleStream);
+  Result := nil;
   try
     oCatalog := CoCatalog.Create;
     oCatalog.Create(string(AConnectionString));
@@ -51,86 +48,122 @@ begin
     oTable := CoTable.Create;;
     oTable.ParentCatalog := oCatalog;
     oTable.Name := 'Users';
-    oTable.Columns.Append('UserID', adInteger, 0);
-    oTable.Columns['UserID'].Properties['AutoIncrement'].Value := True;
-    for a in AttrCatalog do
-    begin
-      if a^.Visible then
-      begin
-        oTable.Columns.Append(a^.Title, adInteger, 0);
-      end;
-    end;
-
-    oIndex := CoIndex.Create;
-    oIndex.Name := 'ObjectID';
-    oIndex.Unique := True;
-    oIndex.PrimaryKey := True;
-    oIndex.Columns.Append('UserID', adInteger, 0);
-
-    oTable.Indexes.Append(oIndex, Null);
-
+    GenerateFields(oTable, AFieldCatalog, 'UserID');
     oCatalog.Tables.Append(oTable);
 
     // Groups
     oTable := CoTable.Create;;
     oTable.ParentCatalog := oCatalog;
     oTable.Name := 'Groups';
-    oTable.Columns.Append('GroupID', adInteger, 0);
-    oTable.Columns['GroupID'].Properties['AutoIncrement'].Value := True;
-    for a in AttrCatalog do
-    begin
-      if a^.Visible then
-      begin
-        oTable.Columns.Append(a^.Title, adInteger, 0);
-      end;
-    end;
-
-    oIndex := CoIndex.Create;
-    oIndex.Name := 'ObjectID';
-    oIndex.Unique := True;
-    oIndex.PrimaryKey := True;
-    oIndex.Columns.Append('GroupID', adInteger, 0);
-
-    oTable.Indexes.Append(oIndex, Null);
-
+    GenerateFields(oTable, AFieldCatalog, 'GroupID');
     oCatalog.Tables.Append(oTable);
 
     // Computers
     oTable := CoTable.Create;;
     oTable.ParentCatalog := oCatalog;
     oTable.Name := 'Computers';
-    oTable.Columns.Append('ComputerID', adInteger, 0);
-    oTable.Columns['ComputerID'].Properties['AutoIncrement'].Value := True;
-    for a in AttrCatalog do
-    begin
-      if a^.Visible then
-      begin
-        oTable.Columns.Append(a^.Title, adInteger, 0);
-      end;
-    end;
-
-    oIndex := CoIndex.Create;
-    oIndex.Name := 'ObjectID';
-    oIndex.Unique := True;
-    oIndex.PrimaryKey := True;
-    oIndex.Columns.Append('ComputerID', adInteger, 0);
-
-    oTable.Indexes.Append(oIndex, Null);
-
+    GenerateFields(oTable, AFieldCatalog, 'ComputerID');
     oCatalog.Tables.Append(oTable);
 
     Result := oCatalog;
   finally
-    oIndex := nil;
     oTable := nil;
-    OleStream.Free;
-    AttrCatalog.Free;
   end;
 end;
 
 procedure TADCElevationMoniker.DeleteControlEventsList(AFileName: PWideChar);
 begin
   DeleteFileW(AFileName);
+end;
+
+procedure TADCElevationMoniker.GenerateFields(ATable: Table;
+  const AFieldCatalog: IInterface; APrimaryKeyName: string);
+var
+  i: Integer;
+  k: Integer;
+  s: string;
+  FieldExists: Boolean;
+  FieldName: string;
+  oColumn: OLEVariant;
+  oIndex: Index;
+  AttrCatalog: TAttrCatalog;
+  OleStream: TOleStream;
+  a: PADAttribute;
+begin
+  OleStream := TOLEStream.Create((AFieldCatalog as IStream));
+  AttrCatalog := TAttrCatalog.Create();
+  AttrCatalog.LoadFromStream(OleStream);
+  try
+//    ATable.Columns.Append(APrimaryKeyName, adInteger, 0);
+//    ATable.Columns[APrimaryKeyName].Properties['AutoIncrement'].Value := True;
+//
+//    oIndex := CoIndex.Create;
+//    oIndex.Name := 'ObjectID';
+//    oIndex.Unique := True;
+//    oIndex.PrimaryKey := True;
+//    oIndex.Columns.Append(APrimaryKeyName, adInteger, 0);
+//
+//    ATable.Indexes.Append(oIndex, Null);
+
+    for a in AttrCatalog do
+    begin
+      if not a^.Visible
+        then Continue;
+
+      // Формируем имя поля
+      s := IfThen(a^.Name = '', a^.Title, a^.Name);
+      if s = '' then
+      begin
+        Inc(i);
+        s := 'UnknownField';
+      end;
+
+      FieldName := s;
+
+      // Ищем дубликаты и, если находим, то добавляем к имени порядковый номер
+      k := 1;
+      while True do
+      begin
+        FieldExists := False;
+        for i := 0 to ATable.Columns.Count - 1 do
+        if CompareText(ATable.Columns[i].Name, FieldName) = 0 then
+        begin
+          Inc(k);
+          FieldExists := True;
+          FieldName := Format('%s (%d)', [s, k]);
+          Break;
+        end;
+
+        if not FieldExists then Break;
+      end;
+
+      // Добавляем поле в таблицу
+      case IndexText(s,
+        [
+          'lastLogon',             { 0 }
+          'pwdLastSet',            { 1 }
+          'badPwdCount',           { 2 }
+          'groupType',             { 3 }
+          'userAccountControl',    { 4 }
+          'primaryGroupToken',     { 5 }
+          'thumbnailPhoto',        { 6 }
+          'description'            { 7 }
+        ]
+      ) of
+        0..1: ATable.Columns.Append(FieldName, adDate, 0);
+        2..5: ATable.Columns.Append(FieldName, adInteger, 0);
+        6: ATable.Columns.Append(FieldName, adLongVarBinary, 0);
+        7: ATable.Columns.Append(FieldName, adLongVarWChar, 0);
+        else ATable.Columns.Append(FieldName, adVarWChar, 255);
+      end;
+
+      ATable.Columns[FieldName].Properties['Nullable'].Value := True;
+    end;
+  finally
+    oIndex := nil;
+    OleStream.Free;
+    AttrCatalog.Free;
+  end;
 end;
 
 procedure TADCElevationMoniker.RegisterUCMAComponents(AClassID: PWideChar);
