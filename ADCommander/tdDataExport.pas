@@ -14,16 +14,6 @@ const
   DB_PROVIDER_ACE120 = 'Microsoft.ACE.OLEDB.12.0';
 
 type
-  TADCExportFormat = (
-    efNone,
-    efAccess,
-    efAccess2007,
-    efExcel,
-    efExcel2007,
-    efCommaSeparated
-  );
-
-type
   TADCExporter = class(TThread)
   private
     FOwner: HWND;
@@ -44,9 +34,11 @@ type
     FExceptionCode: ULONG;
     FExceptionMsg: string;
 
+    procedure Initialize(AOwner: HWND; ASourceList: TADObjectList<TADObject>;
+      AAttrCatalog: TAttrCatalog; AFormat: TADCExportFormat; AFileName: TFileName;
+      ASyncObject: TCriticalSection; AProgressProc: TProgressProc; AExceptionProc: TExceptionProc);
     procedure Clear;
     function GenerateFileName(AFileName: TFileName): TFileName;
-//    procedure CreateAccessDataBase;
     procedure SyncProgress;
     procedure SyncException;
     procedure DoProgress(AProgress: Integer);
@@ -82,19 +74,19 @@ begin
   if (ARootDSE = nil) or (ASourceList = nil)
     then Self.Terminate;
 
-  FOwner         := AOwner;
-  FAPI           := ADC_API_ADSI;
-  FLDAP          := nil;
-  FRootDSE       := ARootDSE;
-  FSrc           := ASourceList;
-  FAttrCat       := AAttrCatalog;
-  FFormat        := AFormat;
-  FFileName      := GenerateFileName(AFileName);
-  FSyncObject    := ASyncObject;
-  FProgressProc  := AProgressProc;
-  FExceptionProc := AExceptionProc;
+  Initialize(
+    AOwner,
+    ASourceList,
+    AAttrCatalog,
+    AFormat,
+    AFileName,
+    ASyncObject,
+    AProgressProc,
+    AExceptionProc
+  );
 
-  FDBConnectionString := '';
+  FAPI := ADC_API_ADSI;
+  FRootDSE := ARootDSE;
 end;
 
 function TADCExporter.GenerateFileName(AFileName: TFileName): TFileName;
@@ -143,17 +135,55 @@ begin
 //  DeleteFile(PChar(res));
 end;
 
+procedure TADCExporter.Initialize(AOwner: HWND;
+  ASourceList: TADObjectList<TADObject>; AAttrCatalog: TAttrCatalog;
+  AFormat: TADCExportFormat; AFileName: TFileName;
+  ASyncObject: TCriticalSection; AProgressProc: TProgressProc;
+  AExceptionProc: TExceptionProc);
+var
+  a: PADAttribute;
+begin
+  FOwner         := AOwner;
+  FAPI           := -1;
+  FLDAP          := nil;
+  FRootDSE       := nil;
+  FSrc           := ASourceList;
+  FAttrCat       := TAttrCatalog.Create(False);
+  FFormat        := AFormat;
+  FFileName      := GenerateFileName(AFileName);
+  FSyncObject    := ASyncObject;
+  FProgressProc  := AProgressProc;
+  FExceptionProc := AExceptionProc;
+
+  case FFormat of
+    efAccess:
+      FDBConnectionString := Format('Provider=%s;Data Source=%s;', [DB_PROVIDER_JET, FFileName]);
+    efAccess2007:
+      FDBConnectionString := Format('Provider=%s;Data Source=%s;', [DB_PROVIDER_ACE120, FFileName]);
+    else
+      FDBConnectionString := '';
+  end;
+
+  // Экспортируем только отображаемые поля, а также не экспортируем поле,
+  // содержащее изображение пользователя т.к. лень было заморачиваться.
+  // Да и по предыдущему опыту (реализовывал в ADUserInfo) знаю, что
+  // если экспортировать изобрежения, то это занимает очень много времени
+  for a in AAttrCatalog do
+    if (a^.IsExportRequired) or ((a^.Visible) and (not a^.IsNotExported))
+      then FAttrCat.Add(a);
+end;
+
 procedure TADCExporter.Clear;
 begin
   FAPI           := -1;
   FLDAP          := nil;
   FRootDSE       := nil;
   FSrc           := nil;
-  FAttrCat       := nil;
   FFormat        := efNone;
   FFileName      := '';
   FProgressProc  := nil;
   FExceptionProc := nil;
+  FAttrCat.Free;
 
   CoUninitialize;
 
@@ -174,26 +204,19 @@ begin
   if (ALDAP = nil) or (ASourceList = nil)
     then Self.Terminate;
 
-  FOwner         := AOwner;
-  FAPI           := ADC_API_LDAP;
-  FLDAP          := ALDAP;
-  FRootDSE       := nil;
-  FSrc           := ASourceList;
-  FAttrCat       := AAttrCatalog;
-  FFormat        := AFormat;
-  FFileName      := GenerateFileName(AFileName);
-  FSyncObject    := ASyncObject;
-  FProgressProc  := AProgressProc;
-  FExceptionProc := AExceptionProc;
+  Initialize(
+    AOwner,
+    ASourceList,
+    AAttrCatalog,
+    AFormat,
+    AFileName,
+    ASyncObject,
+    AProgressProc,
+    AExceptionProc
+  );
 
-  case FFormat of
-    efAccess:
-      FDBConnectionString := Format('Provider=%s;Data Source=%s;', [DB_PROVIDER_JET, FFileName]);
-    efAccess2007:
-      FDBConnectionString := Format('Provider=%s;Data Source=%s;', [DB_PROVIDER_ACE120, FFileName]);
-    else
-      FDBConnectionString := '';
-  end;
+  FAPI := ADC_API_LDAP;
+  FLDAP := ALDAP;
 end;
 
 procedure TADCExporter.DoException(AMsg: string; ACode: ULONG);
@@ -263,7 +286,10 @@ var
   j: Integer;
   o: TADObject;
   thumbnailPhoto: TImgByteArray;
+  lstMembers: TADGroupMemberList;
 begin
+  lstMembers := TADGroupMemberList.Create;
+
   oCatalog := CreateAccessDatabase(
     FOwner,
     PChar(FDBConnectionString),
@@ -288,16 +314,16 @@ begin
 
     // Определяем имя таблицы для вывода значений
     if o.IsUser
-      then sTableName := 'Users'
+      then sTableName := EXPORT_TABNAME_USERS
     else if o.IsGroup
-      then sTableName := 'Groups'
-    else sTableName := 'Computers';
+      then sTableName := EXPORT_TABNAME_GROUPS
+    else
+      sTableName := EXPORT_TABNAME_WORKSTATIONS;
 
     // Формируем строку заначений
     j := 0;
     for a in FAttrCat do
     begin
-      if not a^.Visible then Continue;
       Inc(j);
       case IndexText(a^.Name,
         [
@@ -324,13 +350,15 @@ begin
 //        6: if o.thumbnailFileSize = 0 then sValue := 'Null' else
 //           begin
 //             TImgProcessor.ImageToByteArray(o.thumbnailPhoto, @thumbnailPhoto);
-//             sValue := '0x' + thumbnailPhoto.AsBinString;
+//             sValue := '0x' + thumbnailPhoto.AsBinString;  // <- Не работает
 //             SetLength(thumbnailPhoto, 0);
 //           end
-        else sValue := QuotedStr(GetPropValue(o, a^.ObjProperty, True));
+        else if CompareText('nearestEvent', a^.ObjProperty) <> 0
+          then sValue := QuotedStr(GetPropValue(o, a^.ObjProperty, True))
+          else if o.nearestEvent > 0
+            then sValue := QuotedStr(FormatDateTime('yyyy-mm-dd hh:nn:ss', o.nearestEvent))
+            else sValue := 'Null';
       end;
-
-
 
       if j = 1
         then sFieldValues := Format('%s', [sValue])
@@ -342,6 +370,23 @@ begin
       Format('INSERT INTO %s VALUES (%s)', [sTableName, sFieldValues])
     );
 
+//    // Заполняем таблицу членства в группах безопасности
+//    if o.IsGroup then
+//    begin
+//      case FAPI of
+//        ADC_API_LDAP: o.GetGroupMembers(FLDAP, lstMembers);
+//        ADC_API_ADSI: o.GetGroupMembers(lstMembers);
+//      end;
+//
+//      for j := 0 to lstMembers.Count - 1 do
+//      begin
+//        sFieldValues := QuotedStr(o.distinguishedName) + ',' + QuotedStr(lstMembers[j].distinguishedName);
+//        oConnection.Execute(
+//          Format('INSERT INTO %s VALUES (%s)', ['Membership', sFieldValues])
+//        );
+//      end;
+//    end;
+
     i := i + 1;
     DoProgress(Trunc(i * FSrc.Count / 100));
   end;
@@ -349,112 +394,39 @@ begin
   oConnection.Close;
   oConnection := Null;
   oCatalog := nil;
+  lstMembers.Free;
 end;
 
 procedure TADCExporter.DoDataExport_Excel;
 var
-  userPictureJPEG: TJPEGImage;
-  userPictureStream: TMemoryStream;
-  SaveAsFormat: Integer;
-  ExcelApp: Variant;
-  SheetObj: Variant;
-  SheetGrp: Variant;
-  ColSet: Variant;
-  RowSet: Variant;
+  oExcelBook: Variant;
+  oSheet: Variant;
+  oColumns: Variant;
+  oRows: Variant;
   idxObj: Integer;
   idxGrp: Integer;
   i, j: Integer;
   dataSize: Extended;
   dataSizeUnit: string;
   hr: HRESULT;
-//  listGroups: TObjectList<TUserGroup>;
-//  pUser: IADsUser;
-//  objUser: TADUserData;
-//  objGroup: TUserGroup;
 begin
-  ExcelApp := CreateOleObject('Excel.Application');
-
-//  listGroups := TObjectList<TUserGroup>.Create;
-  ExcelApp.Workbooks.Add(xlWBATWorksheet);
-  ExcelApp.DisplayAlerts := False;
-  ExcelApp.Calculation := xlCalculationManual;
-  ExcelApp.EnableEvents := False;
-  ExcelApp.ScreenUpdating := False;
-  ExcelApp.ActiveWindow.SplitRow := 1;
-  ExcelApp.ActiveWindow.SplitColumn := 1;
-  ExcelApp.ActiveWindow.FreezePanes := True;
-  ExcelApp.Workbooks[1].WorkSheets[1].Name := 'Objects';
-  SheetObj := ExcelApp.Workbooks[1].Worksheets['Objects'];
-  SheetObj.EnableCalculation := False;
-
-  ColSet := SheetObj.Columns;
-  {}
-
-  RowSet := SheetObj.Rows;
-  RowSet.Rows[1].Font.Bold := True;
-  {}
-
-  ExcelApp.Workbooks[1].WorkSheets.Add(
-    EmptyParam,     //Before: An object that specifies the sheet before which the new sheet is added.
-    SheetObj,       //After: An object that specifies the sheet after which the new sheet is added.
-    1,              //Count: The number of sheets to be added. The default value is one.
-    xlWorksheet     //Type: Specifies the sheet type. Can be one of the following XlSheetType constants: xlWorksheet, xlChart, xlExcel4MacroSheet, or xlExcel4IntlMacroSheet.
+  oExcelBook := CreateExcelBook(
+    FOwner,
+    FAttrCat.AsIStream,
+    False
   );
 
-  ExcelApp.ActiveWindow.SplitRow := 1;
-  ExcelApp.ActiveWindow.FreezePanes := True;
-  ExcelApp.Workbooks[1].WorkSheets[2].Name := 'Groups';
-  SheetGrp := ExcelApp.Workbooks[1].Worksheets['Groups'];
-  SheetGrp.EnableCalculation := False;
-
-  ColSet := SheetGrp.Columns;
-  {}
-
-  RowSet := SheetGrp.Rows;
-  RowSet.Rows[1].Font.Bold := True;
-  {}
 
 
-
-
-
-
-
-
-  { Сохраняем книгу Excel }
-  SheetObj.EnableCalculation := True;
-  SheetGrp.EnableCalculation := True;
-  SheetObj.Activate;
-
-  case FFormat of
-    efExcel2007      : SaveAsFormat := xlWorkbookDefault;
-    efExcel          : SaveAsFormat := xlExcel8;
-    efCommaSeparated : SaveAsFormat := xlCSVWindows;
-  end;
-
-  ExcelApp.ActiveWorkBook.SaveAs(
-    FFileName,        // Filename
-    SaveAsFormat,     // FileFormat
-    EmptyParam,       // Password
-    EmptyParam,       // WriteResPassword
-    False,            // ReadOnlyRecommended
-    False,            // CreateBackup
-    EmptyParam,       // AccessMode
-    EmptyParam,       // ConflictResolution
-    False,            // AddToMru
-    EmptyParam,       // TextCodepage
-    EmptyParam,       // TextVisualLayout
-    EmptyParam        // Local
+  SaveExcelBook(
+    FOwner,
+    oExcelBook,
+    PChar(FFileName),
+    ShortInt(FFormat),
+    IsCreateFileElevationRequired(ExtractFileDir(FFileName))
   );
 
-  ExcelApp.Calculation := xlCalculationAutomatic;
-  ExcelApp.EnableEvents := True;
-  ExcelApp.ScreenUpdating := True;
-  ExcelApp.DisplayAlerts := True;
-  ExcelApp.ActiveWorkbook.RunAutoMacros(2);
-  ExcelApp.ActiveWorkbook.Close(False);
-  ExcelApp := Null;
-//  listGroups.Free;
+  oExcelBook := Null;
 end;
 
 procedure TADCExporter.SyncException;

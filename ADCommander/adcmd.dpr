@@ -45,7 +45,6 @@ uses
   tdMessageSend in 'tdMessageSend.pas',
   fmWorkstationInfo in 'fmWorkstationInfo.pas' {Form_WorkstationInfo},
   tdDataExport in 'tdDataExport.pas',
-  ADC.ExcelEnum in 'ADC.ExcelEnum.pas',
   ADCmdUCMA_TLB in 'ADCmdUCMA_TLB.pas',
   fmFloatingWindow in 'fmFloatingWindow.pas' {Form_FloatingWindow},
   ADC.UCMAEvents in 'ADC.UCMAEvents.pas',
@@ -55,7 +54,8 @@ uses
   ADCommander_TLB in '..\ElevationMoniker\ADCommander_TLB.pas',
   ADOX_TLB in '..\Common\ADOX_TLB.pas',
   ActiveDs_TLB in '..\Common\ActiveDs_TLB.pas',
-  ADC.Types in '..\Common\ADC.Types.pas';
+  ADC.Types in '..\Common\ADC.Types.pas',
+  ADC.ExcelEnum in '..\Common\ADC.ExcelEnum.pas';
 
 {$R *.res}
 

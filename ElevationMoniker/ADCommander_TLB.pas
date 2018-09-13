@@ -12,7 +12,7 @@ unit ADCommander_TLB;
 // ************************************************************************ //
 
 // $Rev: 52393 $
-// File generated on 11.09.2018 16:30:43 from Type Library described below.
+// File generated on 13.09.2018 14:35:41 from Type Library described below.
 
 // ************************************************************************  //
 // Type Lib: D:\Projects\ADCommander\ElevationMoniker\ADCmdUAC (1)
@@ -78,6 +78,8 @@ type
     procedure SaveControlEventsList(AFileName: PWideChar; const AXMLStream: IUnknown); safecall;
     procedure DeleteControlEventsList(AFileName: PWideChar); safecall;
     function CreateAccessDatabase(AConnectionString: PWideChar; const AFieldCatalog: IUnknown): IUnknown; safecall;
+    function CreateExcelBook(const AFieldCatalog: IUnknown): IDispatch; safecall;
+    procedure SaveExcelBook(const ABook: IDispatch; AFileName: PWideChar; AFormat: Shortint); safecall;
   end;
 
 // *********************************************************************//
@@ -94,6 +96,9 @@ type
     procedure DeleteControlEventsList(AFileName: {NOT_OLEAUTO(PWideChar)}OleVariant); dispid 104;
     function CreateAccessDatabase(AConnectionString: {NOT_OLEAUTO(PWideChar)}OleVariant;
                                   const AFieldCatalog: IUnknown): IUnknown; dispid 105;
+    function CreateExcelBook(const AFieldCatalog: IUnknown): IDispatch; dispid 106;
+    procedure SaveExcelBook(const ABook: IDispatch; AFileName: {NOT_OLEAUTO(PWideChar)}OleVariant;
+                            AFormat: Shortint); dispid 107;
   end;
 
 // *********************************************************************//

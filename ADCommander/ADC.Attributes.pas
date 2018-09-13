@@ -34,12 +34,13 @@ type
 type
   TAttrCatalog = class(TList)
   private
+    FOwnsObjects: Boolean;
     FOnSave: TNotifyEvent;
     function Get(Index: Integer): PADAttribute;
   protected
     destructor Destroy; override;
   public
-    constructor Create; reintroduce;
+    constructor Create(AOwnsObjects: Boolean = True); reintroduce;
     function Add(Value: PADAttribute): Integer;
     function GetObjPropertyByAttrubute(AAttr: string): string;
     function GetAttrubuteByObjProperty(AProperty: string): string;
@@ -55,6 +56,7 @@ type
     procedure SaveToStream(AStream: TStream);
     property Items[Index: Integer]: PADAttribute read Get; default;
     property OnSave: TNotifyEvent read FOnSave write FOnSave;
+    property OwnsObjects: Boolean read FOwnsObjects write FOwnsObjects;
   end;
 
 type
@@ -183,15 +185,18 @@ procedure TAttrCatalog.Clear;
 var
   i: Integer;
 begin
-  for i := Self.Count - 1 downto 0 do
-    Dispose(Self[i]);
+  if FOwnsObjects
+    then for i := Self.Count - 1 downto 0 do
+      Dispose(Self.Items[i]);
 
-  inherited;
+  inherited Clear;
 end;
 
-constructor TAttrCatalog.Create;
+constructor TAttrCatalog.Create(AOwnsObjects: Boolean);
 begin
-  LoadDefaults;
+  inherited Create;
+
+  FOwnsObjects := AOwnsObjects;
 end;
 
 destructor TAttrCatalog.Destroy;

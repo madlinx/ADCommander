@@ -6,7 +6,7 @@
 // However, when applying changes via the Editor this file will be regenerated
 // and comments or formatting changes will be lost.
 // ************************************************************************ //
-// File generated on 11.09.2018 16:34:06 (- $Rev: 12980 $, 3108640).
+// File generated on 13.09.2018 14:35:46 (- $Rev: 12980 $, 22291593).
 
 [
   uuid(90228991-EF3C-4C19-A4F2-C58AE05C677A),
@@ -42,6 +42,10 @@ library ADCommander
     HRESULT _stdcall DeleteControlEventsList([in] LPWSTR AFileName);
     [id(0x00000069)]
     HRESULT _stdcall CreateAccessDatabase([in] LPWSTR AConnectionString, [in]  IUnknown* AFieldCatalog, [out, retval]  IUnknown** ACatalog);
+    [id(0x0000006A)]
+    HRESULT _stdcall CreateExcelBook([in]  IUnknown* AFieldCatalog, [out, retval]  IDispatch** ABook);
+    [id(0x0000006B)]
+    HRESULT _stdcall SaveExcelBook([in]  IDispatch* ABook, [in] LPWSTR AFileName, [in] byte AFormat);
   };
 
   [

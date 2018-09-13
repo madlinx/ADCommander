@@ -244,7 +244,6 @@
             <FormType>dfm</FormType>
         </DCCReference>
         <DCCReference Include="tdDataExport.pas"/>
-        <DCCReference Include="ADC.ExcelEnum.pas"/>
         <DCCReference Include="ADCmdUCMA_TLB.pas"/>
         <DCCReference Include="fmFloatingWindow.pas">
             <Form>Form_FloatingWindow</Form>
@@ -261,6 +260,7 @@
         <DCCReference Include="..\Common\ADOX_TLB.pas"/>
         <DCCReference Include="..\Common\ActiveDs_TLB.pas"/>
         <DCCReference Include="..\Common\ADC.Types.pas"/>
+        <DCCReference Include="..\Common\ADC.ExcelEnum.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>

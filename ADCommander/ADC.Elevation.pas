@@ -81,6 +81,10 @@ function DeleteControlEventsList(AHandle: HWND; AFileName: PWideChar;
   AElevate: Boolean): HRESULT;
 function CreateAccessDatabase(AHandle: HWND; AConnectionString: PWideChar;
   const AFieldCatalog: IUnknown; AElevate: Boolean): IUnknown;
+function CreateExcelBook(AHandle: HWND; const AFieldCatalog: IUnknown;
+  AElevate: Boolean): IDispatch;
+procedure SaveExcelBook(AHandle: HWND; const ABook: IDispatch; AFileName: PWideChar;
+  AFormat: Shortint; AElevate: Boolean);
 
 implementation
 
@@ -316,6 +320,73 @@ begin
   end;
 
   Result := Moniker.CreateAccessDatabase(AConnectionString, AFieldCatalog);
+end;
+
+function CreateExcelBook(AHandle: HWND; const AFieldCatalog: IUnknown;
+  AElevate: Boolean): IDispatch;
+var
+  Moniker: IElevationMoniker;
+begin
+  Result := nil;
+  try
+    if AElevate then
+      { Create elevated COM object instance. }
+      CoCreateInstanceAsAdmin(
+        AHandle,
+        CLASS_ElevationMoniker,
+        IID_IElevationMoniker,
+        Moniker
+      )
+    else
+      { Create non-elevated COM object instance. }
+      Moniker := CoElevationMoniker.Create;
+  except
+    on E: Exception do begin
+//      MessageBox(
+//        AHandle,
+//        PWideChar(E.Message),
+//        PWideChar('COM object instantiation failed: ' + E.ClassName),
+//        MB_OK or MB_ICONERROR
+//      );
+
+      Exit;
+    end;
+  end;
+
+  Result := Moniker.CreateExcelBook(AFieldCatalog);
+end;
+
+procedure SaveExcelBook(AHandle: HWND; const ABook: IDispatch; AFileName: PWideChar;
+  AFormat: Shortint; AElevate: Boolean);
+var
+  Moniker: IElevationMoniker;
+begin
+  try
+    if AElevate then
+      { Create elevated COM object instance. }
+      CoCreateInstanceAsAdmin(
+        AHandle,
+        CLASS_ElevationMoniker,
+        IID_IElevationMoniker,
+        Moniker
+      )
+    else
+      { Create non-elevated COM object instance. }
+      Moniker := CoElevationMoniker.Create;
+  except
+    on E: Exception do begin
+//      MessageBox(
+//        AHandle,
+//        PWideChar(E.Message),
+//        PWideChar('COM object instantiation failed: ' + E.ClassName),
+//        MB_OK or MB_ICONERROR
+//      );
+
+      Exit;
+    end;
+  end;
+
+  Moniker.SaveExcelBook(ABook, AFileName, AFormat);
 end;
 
 end.

@@ -12,7 +12,8 @@ uses
   System.AnsiStrings, frSearch, tdLDAPEnum, tdADSIEnum, ActiveDs_TLB, JvCipher, ADC.LDAP,
   ADC.Types, ADC.DC, ADC.Attributes, ADC.Common, ADC.GlobalVar, ADC.ADObject,
   ADC.ADObjectList, ADC.ScriptBtn, System.IniFiles, System.RegularExpressions, Vcl.Themes,
-  Winapi.ShlObj, System.SyncObjs, System.Win.ComObj, tdDataExport, fmFloatingWindow;
+  Winapi.ShlObj, System.SyncObjs, System.Win.ComObj, tdDataExport, fmFloatingWindow,
+  ADC.ExcelEnum;
 
 const
   { Контекстное меню   }

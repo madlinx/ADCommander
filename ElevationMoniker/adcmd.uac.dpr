@@ -14,7 +14,8 @@ uses
   ADC.Attributes in '..\ADCommander\ADC.Attributes.pas',
   ActiveDs_TLB in '..\Common\ActiveDs_TLB.pas',
   ADC.Types in '..\Common\ADC.Types.pas',
-  ADOX_TLB in '..\Common\ADOX_TLB.pas';
+  ADOX_TLB in '..\Common\ADOX_TLB.pas',
+  ADC.ExcelEnum in '..\Common\ADC.ExcelEnum.pas';
 
 exports
   DllGetClassObject,

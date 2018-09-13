@@ -5,7 +5,8 @@ interface
 uses
   Winapi.Windows, System.Classes, System.Generics.Collections, System.Generics.Defaults,
   System.SysUtils, System.DateUtils, Winapi.Messages, Vcl.Controls, Vcl.Graphics,
-  System.RegularExpressions, Winapi.ActiveX, MSXML2_TLB, ActiveDs_TLB;
+  System.RegularExpressions, System.StrUtils, System.AnsiStrings, Winapi.ActiveX,
+  MSXML2_TLB, ActiveDs_TLB, ADOX_TLB;
 
 const
   { Название приложения }
@@ -13,6 +14,11 @@ const
   APP_TITLE_JOKE = 'Zhigadlo AD Commander';
 
   ADC_SEARCH_PAGESIZE = 1000;
+
+  { Имена таблиц для экспорта }
+  EXPORT_TABNAME_USERS        = 'Users';
+  EXPORT_TABNAME_GROUPS       = 'Groups';
+  EXPORT_TABNAME_WORKSTATIONS = 'Workstations';
 
   { Разделы ini файла }
   INI_SECTION_GENERAL    = 'GENERAL';
@@ -184,6 +190,14 @@ type
     BgColor: TColor;             { Цвет фона                      }
     FontColor: TColor;           { Цвет шрифта                    }
     ReadOnly: Boolean;           { Только для чтения              }
+  end;
+
+  TADAttributeHelper = record helper for TADAttribute
+    function IsExportRequired: Boolean;
+    function IsNotExported: Boolean;
+    function FieldName: string;
+    function ADODataType: DWORD;
+    function ExcelColumnWidth: Integer;
   end;
 
 type
@@ -617,6 +631,105 @@ var
 begin
   RegEx := TRegEx.Create('(?<=[\\\/])[^\\\/]+$', [roIgnoreCase]);
   Result := RegEx.Match(Self.CanonicalName).Value
+end;
+
+{ TADAttributeHelper }
+
+function TADAttributeHelper.ADODataType: DWORD;
+begin
+   case IndexText(Self.Name,
+     [
+        'lastLogon',             { 0 }
+        'pwdLastSet',            { 1 }
+        'badPwdCount',           { 2 }
+        'groupType',             { 3 }
+        'userAccountControl',    { 4 }
+        'primaryGroupToken',     { 5 }
+        'thumbnailPhoto',        { 6 }
+        'description',           { 7 }
+        'distinguishedName',     { 8 }
+        'canonicalName'          { 9 }
+     ]
+   ) of
+     0..1: Result := adDate;
+     2..5: Result := adInteger;
+     6:    Result := adLongVarBinary;
+     7..9: Result := adLongVarWChar;
+     else if CompareText('Событие', Self.Title) = 0
+       then Result := adDate
+       else Result := adVarWChar;
+   end;
+end;
+
+function TADAttributeHelper.ExcelColumnWidth: Integer;
+begin
+  case IndexText(Self.Name,
+    [
+       'name',                         { 0 }
+       'sAMAccountName',               { 1 }
+       'employeeID',                   { 2 }
+       'title',                        { 3 }
+       'telephoneNumber',              { 4 }
+       'lastLogonComputer',            { 5 }
+       'description',                  { 6 }
+       'userWorkstations',             { 7 }
+       'physicalDeliveryOfficeName',   { 8 }
+       'department',                   { 9 }
+       'mail',                         { 10 }
+       'canonicalName',                { 11 }
+       'distinguishedName',            { 12 }
+       'lastLogon',                    { 13 }
+       'pwdExpirationDate',            { 14 }
+       'badPwdCount',                  { 15 }
+       'userAccountControl',           { 16 }
+       'objectSid'                     { 17 }
+    ]
+  ) of
+    0: Result := 25;
+    1: Result := 25;
+    2: Result := 11;
+    3: Result := 25;
+    4: Result := 17;
+    5: Result := 17;
+    6: Result := 45;
+    7: Result := 20;
+    8: Result := 45;
+    9: Result := 45;
+    10: Result := 25;
+    11: Result := 45;
+    12: Result := 45;
+    13: Result := 15;
+    14: Result := 15;
+    15: Result := 5;
+    16: Result := 10;
+    17: Result := 45;
+    else
+  end;
+
+end;
+
+function TADAttributeHelper.FieldName: string;
+var
+  s: string;
+begin
+  if CompareText('nearestEvent', Self.ObjProperty) = 0
+    then s := 'NearestEvent'
+    else if CompareText('passwordExpiration', Self.ObjProperty) = 0
+      then s := 'PasswordExpiration'
+      else s := IfThen(Self.Name = '', Self.Title, Self.Name);
+
+  Result := IfThen(s.IsEmpty, 'UntitledField', s);
+end;
+
+function TADAttributeHelper.IsExportRequired: Boolean;
+begin
+  Result := (CompareText('distinguishedName', Self.Name) = 0);
+end;
+
+function TADAttributeHelper.IsNotExported: Boolean;
+begin
+  Result := ( not Self.IsExportRequired ) and
+    ( CompareText(Self.Name, 'thumbnailPhoto') = 0 )
 end;
 
 end.

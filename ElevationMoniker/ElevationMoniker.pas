@@ -7,7 +7,8 @@ interface
 uses
   Winapi.Windows, Winapi.ActiveX, System.Classes, System.Win.ComObj, ADCommander_TLB,
   System.SysUtils, System.Win.Registry, System.Variants, Vcl.AxCtrls, System.AnsiStrings,
-  System.StrUtils, ADOX_TLB, ElevationMonikerFactory, MSXML2_TLB, ADC.Types, ADC.Attributes;
+  System.StrUtils, ADOX_TLB, ElevationMonikerFactory, MSXML2_TLB, ADC.Types, ADC.Attributes,
+  ADC.ExcelEnum;
 
 type
   TADCElevationMoniker = class(TTypedComObject, IElevationMoniker)
@@ -16,13 +17,15 @@ type
   private
     procedure GenerateFields(ATable: Table; const AFieldCatalog: IUnknown;
       APrimaryKeyName: string); overload;
+    procedure GenerateFields(AWorksheet: IDispatch; const AFieldCatalog: IUnknown); overload;
   protected
     procedure RegisterUCMAComponents(AClassID: PWideChar); safecall;
     procedure UnregisterUCMAComponents(AClassID: PWideChar); safecall;
     procedure SaveControlEventsList(AFileName: PWideChar; const AXMLStream: IUnknown); safecall;
     procedure DeleteControlEventsList(AFileName: PWideChar); safecall;
-    function CreateAccessDatabase(AConnectionString: PWideChar;
-      const AFieldCatalog: IUnknown): IUnknown; safecall;
+    function CreateAccessDatabase(AConnectionString: PWideChar; const AFieldCatalog: IUnknown): IUnknown; safecall;
+    function CreateExcelBook(const AFieldCatalog: IUnknown): IDispatch; safecall;
+    procedure SaveExcelBook(const ABook: IDispatch; AFileName: PWideChar; AFormat: Shortint); safecall;
   public
 
   end;
@@ -47,23 +50,31 @@ begin
     // Users
     oTable := CoTable.Create;;
     oTable.ParentCatalog := oCatalog;
-    oTable.Name := 'Users';
+    oTable.Name := EXPORT_TABNAME_USERS;
     GenerateFields(oTable, AFieldCatalog, 'UserID');
     oCatalog.Tables.Append(oTable);
 
     // Groups
     oTable := CoTable.Create;;
     oTable.ParentCatalog := oCatalog;
-    oTable.Name := 'Groups';
+    oTable.Name := EXPORT_TABNAME_GROUPS;
     GenerateFields(oTable, AFieldCatalog, 'GroupID');
     oCatalog.Tables.Append(oTable);
 
     // Computers
     oTable := CoTable.Create;;
     oTable.ParentCatalog := oCatalog;
-    oTable.Name := 'Computers';
+    oTable.Name := EXPORT_TABNAME_WORKSTATIONS;
     GenerateFields(oTable, AFieldCatalog, 'ComputerID');
     oCatalog.Tables.Append(oTable);
+
+//    // Groups Membership
+//    oTable := CoTable.Create;;
+//    oTable.ParentCatalog := oCatalog;
+//    oTable.Name := 'Membership';
+//    oTable.Columns.Append('Group', adLongVarWChar, 0);
+//    oTable.Columns.Append('Member', adLongVarWChar, 0);
+//    oCatalog.Tables.Append(oTable);
 
     Result := oCatalog;
   finally
@@ -71,9 +82,96 @@ begin
   end;
 end;
 
+function TADCElevationMoniker.CreateExcelBook(const AFieldCatalog: IInterface): IDispatch;
+var
+  SaveAsFormat: Integer;
+  oExcelBook: Variant;
+  oSheet: Variant;
+begin
+  oExcelBook := CreateOleObject('Excel.Application');
+
+  oExcelBook.Workbooks.Add(xlWBATWorksheet);
+  oExcelBook.DisplayAlerts := False;
+  oExcelBook.Calculation := xlCalculationManual;
+  oExcelBook.EnableEvents := False;
+  oExcelBook.ScreenUpdating := False;
+
+  // Лист "Users"
+  oExcelBook.ActiveWindow.SplitRow := 1;
+//  oExcelBook.ActiveWindow.SplitColumn := 1;
+  oExcelBook.ActiveWindow.FreezePanes := True;
+  oExcelBook.Workbooks[1].WorkSheets[1].Name := EXPORT_TABNAME_USERS;
+  oSheet := oExcelBook.Workbooks[1].Worksheets[EXPORT_TABNAME_USERS];
+  GenerateFields(oSheet, AFieldCatalog);
+
+  // Лист "Groups"
+  oExcelBook.Workbooks[1].WorkSheets.Add(
+    EmptyParam,     //Before: An object that specifies the sheet before which the new sheet is added.
+    oSheet,         //After: An object that specifies the sheet after which the new sheet is added.
+    1,              //Count: The number of sheets to be added. The default value is one.
+    xlWorksheet     //Type: Specifies the sheet type. Can be one of the following XlSheetType constants: xlWorksheet, xlChart, xlExcel4MacroSheet, or xlExcel4IntlMacroSheet.
+  );
+
+  oExcelBook.ActiveWindow.SplitRow := 1;
+  oExcelBook.ActiveWindow.FreezePanes := True;
+  oExcelBook.Workbooks[1].WorkSheets[2].Name := EXPORT_TABNAME_GROUPS;
+  oSheet := oExcelBook.Workbooks[1].Worksheets[EXPORT_TABNAME_GROUPS];
+  GenerateFields(oSheet, AFieldCatalog);
+
+  // Лист "Workstations"
+  oExcelBook.Workbooks[1].WorkSheets.Add(
+    EmptyParam,     //Before: An object that specifies the sheet before which the new sheet is added.
+    oSheet,       //After: An object that specifies the sheet after which the new sheet is added.
+    1,              //Count: The number of sheets to be added. The default value is one.
+    xlWorksheet     //Type: Specifies the sheet type. Can be one of the following XlSheetType constants: xlWorksheet, xlChart, xlExcel4MacroSheet, or xlExcel4IntlMacroSheet.
+  );
+
+  oExcelBook.ActiveWindow.SplitRow := 1;
+  oExcelBook.ActiveWindow.FreezePanes := True;
+  oExcelBook.Workbooks[1].WorkSheets[3].Name := EXPORT_TABNAME_WORKSTATIONS;
+  oSheet := oExcelBook.Workbooks[1].Worksheets[EXPORT_TABNAME_WORKSTATIONS];
+  GenerateFields(oSheet, AFieldCatalog);
+
+  Result := oExcelBook;
+end;
+
 procedure TADCElevationMoniker.DeleteControlEventsList(AFileName: PWideChar);
 begin
   DeleteFileW(AFileName);
+end;
+
+procedure TADCElevationMoniker.GenerateFields(AWorksheet: IDispatch;
+  const AFieldCatalog: IInterface);
+var
+  oSheet: Variant;
+  oRows: Variant;
+  oColumns: Variant;
+  i: Integer;
+  AttrCatalog: TAttrCatalog;
+  OleStream: TOleStream;
+  a: TADAttribute;
+begin
+  oSheet := AWorksheet;
+  oSheet.EnableCalculation := False;
+
+  oRows := oSheet.Rows;
+  oRows.Rows[1].Font.Bold := True;
+  oColumns := oSheet.Columns;
+
+  OleStream := TOLEStream.Create((AFieldCatalog as IStream));
+  AttrCatalog := TAttrCatalog.Create;
+  AttrCatalog.LoadFromStream(OleStream);
+  try
+    for i := 0 to AttrCatalog.Count - 1 do
+    begin
+      a := AttrCatalog[i]^;
+      oColumns.Columns[i + 1].ColumnWidth := a.ExcelColumnWidth;
+      oSheet.Cells[1, i + 1] := a.FieldName;
+    end;
+  finally
+    OleStream.Free;
+    AttrCatalog.Free;
+  end;
 end;
 
 procedure TADCElevationMoniker.GenerateFields(ATable: Table;
@@ -84,7 +182,7 @@ var
   s: string;
   FieldExists: Boolean;
   FieldName: string;
-  oColumn: OLEVariant;
+  FieldSize: Integer;
   oIndex: Index;
   AttrCatalog: TAttrCatalog;
   OleStream: TOleStream;
@@ -107,20 +205,11 @@ begin
 
     for a in AttrCatalog do
     begin
-      if not a^.Visible
-        then Continue;
-
       // Формируем имя поля
-      s := IfThen(a^.Name = '', a^.Title, a^.Name);
-      if s = '' then
-      begin
-        Inc(i);
-        s := 'UnknownField';
-      end;
-
+      s := a^.FieldName;
       FieldName := s;
 
-      // Ищем дубликаты и, если находим, то добавляем к имени порядковый номер
+      // Ищем дубликаты и, если находим, добавляем к имени порядковый номер
       k := 1;
       while True do
       begin
@@ -137,26 +226,13 @@ begin
         if not FieldExists then Break;
       end;
 
-      // Добавляем поле в таблицу
-      case IndexText(s,
-        [
-          'lastLogon',             { 0 }
-          'pwdLastSet',            { 1 }
-          'badPwdCount',           { 2 }
-          'groupType',             { 3 }
-          'userAccountControl',    { 4 }
-          'primaryGroupToken',     { 5 }
-          'thumbnailPhoto',        { 6 }
-          'description'            { 7 }
-        ]
-      ) of
-        0..1: ATable.Columns.Append(FieldName, adDate, 0);
-        2..5: ATable.Columns.Append(FieldName, adInteger, 0);
-        6: ATable.Columns.Append(FieldName, adLongVarBinary, 0);
-        7: ATable.Columns.Append(FieldName, adLongVarWChar, 0);
-        else ATable.Columns.Append(FieldName, adVarWChar, 255);
+      //Добавляем поле в таблицу
+      case a^.ADODataType of
+        adLongVarWChar: FieldSize := 255;
+        else FieldSize := 0;
       end;
 
+      ATable.Columns.Append(FieldName, a^.ADODataType, FieldSize);
       ATable.Columns[FieldName].Properties['Nullable'].Value := True;
     end;
   finally
@@ -256,6 +332,50 @@ begin
 
   end;
   xmlDoc := nil;
+end;
+
+procedure TADCElevationMoniker.SaveExcelBook(const ABook: IDispatch;
+  AFileName: PWideChar; AFormat: Shortint);
+var
+  SaveAsFormat: Integer;
+  ExcelApp: Variant;
+  i: Integer;
+begin
+  ExcelApp := ABook;
+
+  for i := 1 to ExcelApp.WorkBooks[1].Worksheets.Count do
+    ExcelApp.WorkBooks[1].Worksheets[i].EnableCalculation := True;
+
+  ExcelApp.WorkBooks[1].Worksheets[1].Activate;
+
+  case TADCExportFormat(AFormat) of
+    efExcel2007      : SaveAsFormat := xlWorkbookDefault;
+    efExcel          : SaveAsFormat := xlExcel8;
+    efCommaSeparated : SaveAsFormat := xlCSVWindows;
+    else               SaveAsFormat := xlExcel8;
+  end;
+
+  ExcelApp.ActiveWorkBook.SaveAs(
+    string(AFileName),  // Filename
+    SaveAsFormat,       // FileFormat
+    EmptyParam,         // Password
+    EmptyParam,         // WriteResPassword
+    False,              // ReadOnlyRecommended
+    False,              // CreateBackup
+    EmptyParam,         // AccessMode
+    EmptyParam,         // ConflictResolution
+    False,              // AddToMru
+    EmptyParam,         // TextCodepage
+    EmptyParam,         // TextVisualLayout
+    EmptyParam          // Local
+  );
+
+  ExcelApp.Calculation := xlCalculationAutomatic;
+  ExcelApp.EnableEvents := True;
+  ExcelApp.ScreenUpdating := True;
+  ExcelApp.DisplayAlerts := True;
+  ExcelApp.ActiveWorkbook.RunAutoMacros(2);
+  ExcelApp.ActiveWorkbook.Close(False);
 end;
 
 procedure TADCElevationMoniker.UnregisterUCMAComponents(AClassID: PWideChar);
