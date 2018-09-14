@@ -403,12 +403,16 @@ var
   oSheet: Variant;
   oColumns: Variant;
   oRows: Variant;
-  idxObj: Integer;
-  idxGrp: Integer;
-  i, j: Integer;
-  dataSize: Extended;
-  dataSizeUnit: string;
-  hr: HRESULT;
+  oCell: Variant;
+  o: TADObject;
+  a: PADAttribute;
+  idxUser: Integer;
+  idxGroup: Integer;
+  idxWorkstation: Integer;
+  iRow: PInteger;
+  iColumn: Integer;
+  i: Integer;
+  s: string;
 begin
   oExcelBook := CreateExcelBook(
     FOwner,
@@ -416,7 +420,72 @@ begin
     False
   );
 
+  i := 0;
+  idxUser := 2;
+  idxGroup := 2;
+  idxWorkstation := 2;
 
+  for o in FSrc do
+  begin
+    if Terminated then Break;
+
+    FObj := o;
+
+    // Определяем лист и счетчик строк для вывода значений
+    if o.IsUser then
+    begin
+      iRow := @idxUser;
+      oSheet := oExcelBook.Workbooks[1].Worksheets[EXPORT_TABNAME_USERS]
+    end else
+    if o.IsGroup then
+    begin
+       iRow := @idxGroup;
+       oSheet := oExcelBook.Workbooks[1].Worksheets[EXPORT_TABNAME_GROUPS]
+    end else
+    begin
+      iRow := @idxWorkstation;
+      oSheet := oExcelBook.Workbooks[1].Worksheets[EXPORT_TABNAME_WORKSTATIONS];
+    end;
+
+    // Формируем строку заначений
+    iColumn := 1;
+
+    for a in FAttrCat do
+    begin
+      case IndexText(a^.Name,
+        [
+          'lastLogon',             { 0 }
+          'pwdLastSet',            { 1 }
+          'badPwdCount',           { 2 }
+          'groupType',             { 3 }
+          'userAccountControl',    { 4 }
+          'primaryGroupToken',     { 5 }
+          'thumbnailPhoto'         { 6 }
+        ]
+      ) of
+        0: if o.lastLogon > 0
+             then oSheet.Cells[iRow^, iColumn] := DateTimeToStr(o.lastLogon);
+        1: if o.passwordExpiration > 0
+             then oSheet.Cells[iRow^, iColumn] := DateTimeToStr(o.passwordExpiration);
+        2: oSheet.Cells[iRow^, iColumn] := IntToStr(o.badPwdCount);
+        3: oSheet.Cells[iRow^, iColumn] := IntToStr(o.groupType);
+        4: oSheet.Cells[iRow^, iColumn] := IntToStr(o.userAccountControl);
+        5: oSheet.Cells[iRow^, iColumn] := IntToStr(o.primaryGroupToken);
+        6: oSheet.Cells[iRow^, iColumn] := o.thumbnailFileSize.AsString;
+        else if CompareText('nearestEvent', a^.ObjProperty) <> 0
+          then oSheet.Cells[iRow^, iColumn] := string(GetPropValue(o, a^.ObjProperty, True))
+          else if o.nearestEvent > 0
+            then oSheet.Cells[iRow^, iColumn] := DateToStr(o.nearestEvent);
+      end;
+
+      s := a^.ExcelCellFormat(oExcelBook);
+      Inc(iColumn);
+    end;
+
+    Inc(iRow^);
+    Inc(i);
+    DoProgress(Trunc(i * FSrc.Count / 100));
+  end;
 
   SaveExcelBook(
     FOwner,

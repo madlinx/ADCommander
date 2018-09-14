@@ -62,6 +62,7 @@ const
   { Application.International Property                       }
   { Returns information about the current country/region and }
   { international settings. Read-only Variant.               }
+  { https://docs.microsoft.com/en-us/office/vba/api/excel.xlapplicationinternational }
   xlDecimalSeparator         = 3;
   xlThousandsSeparator       = 4;
   xlCurrencyDigits           = 27;
@@ -69,9 +70,14 @@ const
   xlDayCode                  = 21;
   xlMonthCode                = 20;
   xlYearCode                 = 19;
+  xlTimeSeparator            = 18;
+  xlHourCode                 = 22;
+  xlMinuteCode               = 23;
+  xlSecondCode               = 24;
 
   function xlGetNumberFormat(XLApp: Variant; ADecPlaces: SmallInt = -1): string;
   function xlGetDateFormat(XLApp: Variant; AFormat: string = 'dd.mm.yyyy'): string;
+  function xlGetDateTimeFormat(XLApp: Variant; AFormat: string = 'dd.mm.yyyy hh:nn:ss'): string;
 
 implementation
 
@@ -123,6 +129,43 @@ begin
 
   regEx := TRegEx.Create('y', [roIgnoreCase]);
   s := regEx.Replace(s, XLApp.International[xlYearCode]);
+
+  Result := s;
+end;
+
+function xlGetDateTimeFormat(XLApp: Variant; AFormat: string = 'dd.mm.yyyy hh:nn:ss'): string;
+var
+  regEx: TRegEx;
+  s: string;
+begin
+  s := AFormat;
+
+  regEx := TRegEx.Create('[^dmyhns\s:\-\.\/]', [roIgnoreCase]);
+  s := regEx.Replace(s, '');
+
+  regEx := TRegEx.Create('[\.\/-]', [roIgnoreCase]);
+  s := regEx.Replace(s, XLApp.International[xlDateSeparator]);
+
+  regEx := TRegEx.Create('d', [roIgnoreCase]);
+  s := regEx.Replace(s, XLApp.International[xlDayCode]);
+
+  regEx := TRegEx.Create('m', [roIgnoreCase]);
+  s := regEx.Replace(s, XLApp.International[xlMonthCode]);
+
+  regEx := TRegEx.Create('y', [roIgnoreCase]);
+  s := regEx.Replace(s, XLApp.International[xlYearCode]);
+
+  regEx := TRegEx.Create(':', [roIgnoreCase]);
+  s := regEx.Replace(s, XLApp.International[xlTimeSeparator]);
+
+  regEx := TRegEx.Create('h', [roIgnoreCase]);
+  s := regEx.Replace(s, XLApp.International[xlHourCode]);
+
+  regEx := TRegEx.Create('n', [roIgnoreCase]);
+  s := regEx.Replace(s, XLApp.International[xlMinuteCode]);
+
+  regEx := TRegEx.Create('s', [roIgnoreCase]);
+  s := regEx.Replace(s, XLApp.International[xlSecondCode]);
 
   Result := s;
 end;

@@ -166,6 +166,8 @@ begin
     begin
       a := AttrCatalog[i]^;
       oColumns.Columns[i + 1].ColumnWidth := a.ExcelColumnWidth;
+      oColumns.Columns[i + 1].HorizontalAlignment := a.ExcelColumnAlignment;
+      oColumns.Columns[i + 1].NumberFormat := a.ExcelCellFormat(oSheet.Application);
       oSheet.Cells[1, i + 1] := a.FieldName;
     end;
   finally

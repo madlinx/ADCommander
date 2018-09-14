@@ -6,7 +6,7 @@ uses
   Winapi.Windows, System.Classes, System.Generics.Collections, System.Generics.Defaults,
   System.SysUtils, System.DateUtils, Winapi.Messages, Vcl.Controls, Vcl.Graphics,
   System.RegularExpressions, System.StrUtils, System.AnsiStrings, Winapi.ActiveX,
-  MSXML2_TLB, ActiveDs_TLB, ADOX_TLB;
+  MSXML2_TLB, ActiveDs_TLB, ADOX_TLB, ADC.ExcelEnum;
 
 const
   { Название приложения }
@@ -198,6 +198,8 @@ type
     function FieldName: string;
     function ADODataType: DWORD;
     function ExcelColumnWidth: Integer;
+    function ExcelColumnAlignment: Integer;
+    function ExcelCellFormat(AExcel: Variant): string;
   end;
 
 type
@@ -655,9 +657,46 @@ begin
      2..5: Result := adInteger;
      6:    Result := adLongVarBinary;
      7..9: Result := adLongVarWChar;
-     else if CompareText('Событие', Self.Title) = 0
+     else if CompareText('nearestEvent', Self.ObjProperty) = 0
        then Result := adDate
        else Result := adVarWChar;
+   end;
+end;
+
+function TADAttributeHelper.ExcelColumnAlignment: Integer;
+begin
+  case IndexText(Self.Name,
+     [
+        'lastLogon',             { 0 }
+        'pwdLastSet',            { 1 }
+        'badPwdCount'            { 2 }
+     ]
+   ) of
+     0..2: Result := xlCenter;
+     else if CompareText('nearestEvent', Self.ObjProperty) = 0
+       then Result := xlCenter
+       else Result := xlLeft;
+   end;
+end;
+
+function TADAttributeHelper.ExcelCellFormat(AExcel: Variant): string;
+begin
+  case IndexText(Self.Name,
+     [
+        'lastLogon',             { 0 }
+        'pwdLastSet',            { 1 }
+        'badPwdCount',           { 2 }
+        'groupType',             { 3 }
+        'userAccountControl',    { 4 }
+        'primaryGroupToken'      { 5 }
+     ]
+   ) of
+     0: Result := xlGetDateTimeFormat(AExcel);
+     1: Result := xlGetDateTimeFormat(AExcel);
+     2: Result := xlGetNumberFormat(AExcel, 0);
+     else if CompareText('nearestEvent', Self.ObjProperty) = 0
+       then Result := xlGetDateFormat(AExcel)
+       else Result := '@';
    end;
 end;
 
@@ -679,7 +718,7 @@ begin
        'canonicalName',                { 11 }
        'distinguishedName',            { 12 }
        'lastLogon',                    { 13 }
-       'pwdExpirationDate',            { 14 }
+       'pwdLastSet',                   { 14 }
        'badPwdCount',                  { 15 }
        'userAccountControl',           { 16 }
        'objectSid'                     { 17 }
@@ -698,14 +737,15 @@ begin
     10: Result := 25;
     11: Result := 45;
     12: Result := 45;
-    13: Result := 15;
-    14: Result := 15;
+    13: Result := 19;
+    14: Result := 19;
     15: Result := 5;
     16: Result := 10;
     17: Result := 45;
-    else
+    else if CompareText('nearestEvent', Self.ObjProperty) = 0
+      then Result := 11
+      else Result := 25;
   end;
-
 end;
 
 function TADAttributeHelper.FieldName: string;
