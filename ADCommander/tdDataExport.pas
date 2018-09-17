@@ -33,12 +33,17 @@ type
     FProgressValue: Integer;
     FExceptionCode: ULONG;
     FExceptionMsg: string;
+    FCancelFlag: TSimpleEvent;
+    FPauseFlag: TSimpleEvent;
+    FWaitList: array of THandle;
 
     procedure Initialize(AOwner: HWND; ASourceList: TADObjectList<TADObject>;
       AAttrCatalog: TAttrCatalog; AFormat: TADCExportFormat; AFileName: TFileName;
       ASyncObject: TCriticalSection; AProgressProc: TProgressProc; AExceptionProc: TExceptionProc);
     procedure Clear;
     function GenerateFileName(AFileName: TFileName): TFileName;
+    procedure SetPaused(APaused: Boolean);
+    function GetPaused: Boolean;
     procedure SyncProgress;
     procedure SyncException;
     procedure DoProgress(AProgress: Integer);
@@ -58,6 +63,7 @@ type
       CreateSuspended: Boolean = False); reintroduce; overload;
     property OnException: TExceptionProc read FExceptionProc write FExceptionProc;
     property OnProgress: TProgressProc read FProgressProc write FProgressProc;
+    property Paused: Boolean read GetPaused write SetPaused;
   end;
 
 implementation
@@ -135,6 +141,11 @@ begin
 //  DeleteFile(PChar(res));
 end;
 
+function TADCExporter.GetPaused: Boolean;
+begin
+  Result := (FPauseFlag.WaitFor(0) <> wrSignaled);
+end;
+
 procedure TADCExporter.Initialize(AOwner: HWND;
   ASourceList: TADObjectList<TADObject>; AAttrCatalog: TAttrCatalog;
   AFormat: TADCExportFormat; AFileName: TFileName;
@@ -154,6 +165,20 @@ begin
   FSyncObject    := ASyncObject;
   FProgressProc  := AProgressProc;
   FExceptionProc := AExceptionProc;
+  FObj           := nil;
+  FProgressValue := 0;
+  FExceptionCode := 0;
+  FExceptionMsg  := '';
+
+  FPauseFlag := TSimpleEvent.Create;
+  FPauseFlag.SetEvent;
+
+  FCancelFlag := TSimpleEvent.Create;
+  FCancelFlag.ResetEvent;
+
+  SetLength(FWaitList, 2);
+  FWaitList[0] := FPauseFlag.Handle;
+  FWaitList[1] := FCancelFlag.Handle;
 
   case FFormat of
     efAccess:
@@ -184,6 +209,8 @@ begin
   FProgressProc  := nil;
   FExceptionProc := nil;
   FAttrCat.Free;
+  FCancelFlag.Free;
+  FPauseFlag.Free;
 
   CoUninitialize;
 
@@ -308,7 +335,16 @@ begin
   i := 0;
   for o in FSrc do
   begin
-    if Terminated then Break;
+    if Terminated then
+    begin
+      FPauseFlag.ResetEvent;
+      FCancelFlag.SetEvent;
+    end;
+
+    case WaitForMultipleObjects(2, @FWaitList[0], False, INFINITE) - WAIT_OBJECT_0 of
+      0: if Terminated then Break;
+      1: Break;
+    end;
 
     FObj := o;
 
@@ -388,11 +424,10 @@ begin
 //    end;
 
     i := i + 1;
-    DoProgress(Trunc(i * FSrc.Count / 100));
+    DoProgress(Trunc(i * 100 / FSrc.Count));
   end;
 
-  oConnection.Close;
-  oConnection := Null;
+  oConnection := Unassigned;
   oCatalog := nil;
   lstMembers.Free;
 end;
@@ -427,7 +462,16 @@ begin
 
   for o in FSrc do
   begin
-    if Terminated then Break;
+    if Terminated then
+    begin
+      FPauseFlag.ResetEvent;
+      FCancelFlag.SetEvent;
+    end;
+
+    case WaitForMultipleObjects(2, @FWaitList[0], False, INFINITE) - WAIT_OBJECT_0 of
+      0: if Terminated then Break;
+      1: Break;
+    end;
 
     FObj := o;
 
@@ -484,7 +528,7 @@ begin
 
     Inc(iRow^);
     Inc(i);
-    DoProgress(Trunc(i * FSrc.Count / 100));
+    DoProgress(Trunc(i * 100 / FSrc.Count));
   end;
 
   SaveExcelBook(
@@ -496,6 +540,14 @@ begin
   );
 
   oExcelBook := Null;
+end;
+
+procedure TADCExporter.SetPaused(APaused: Boolean);
+begin
+  if APaused then
+    FPauseFlag.ResetEvent
+  else
+    FPauseFlag.SetEvent;
 end;
 
 procedure TADCExporter.SyncException;

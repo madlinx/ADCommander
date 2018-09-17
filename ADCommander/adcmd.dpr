@@ -55,7 +55,8 @@ uses
   ADOX_TLB in '..\Common\ADOX_TLB.pas',
   ActiveDs_TLB in '..\Common\ActiveDs_TLB.pas',
   ADC.Types in '..\Common\ADC.Types.pas',
-  ADC.ExcelEnum in '..\Common\ADC.ExcelEnum.pas';
+  ADC.ExcelEnum in '..\Common\ADC.ExcelEnum.pas',
+  fmExportProgress in 'fmExportProgress.pas' {Form_ExportProgress};
 
 {$R *.res}
 
@@ -124,6 +125,7 @@ begin
   Application.CreateForm(TForm_QuickMessage, Form_QuickMessage);
   Application.CreateForm(TForm_WorkstationInfo, Form_WorkstationInfo);
   Application.CreateForm(TForm_CreateContainer, Form_CreateContainer);
+  Application.CreateForm(TForm_ExportProgress, Form_ExportProgress);
   { Поиск контроллеров домена и их объектов при запуске программы }
     case apAPI of
       ADC_API_LDAP: Label_API.Caption := 'Lightweight Directory Access Protocol';

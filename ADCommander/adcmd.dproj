@@ -259,6 +259,10 @@
         <DCCReference Include="..\Common\ActiveDs_TLB.pas"/>
         <DCCReference Include="..\Common\ADC.Types.pas"/>
         <DCCReference Include="..\Common\ADC.ExcelEnum.pas"/>
+        <DCCReference Include="fmExportProgress.pas">
+            <Form>Form_ExportProgress</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
