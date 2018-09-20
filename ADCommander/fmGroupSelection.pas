@@ -597,14 +597,14 @@ end;
 procedure TForm_GroupSelect.ListView_GroupsDrawItem(Sender: TCustomListView;
   Item: TListItem; Rect: TRect; State: TOwnerDrawState);
 var
- C: TCanvas;
- R: TRect;
- S: string;
- ColOrder: array of Integer;
- SubIndex: Integer;
- txtAlign: UINT;
- i: Integer;
- attr: PADAttribute;
+  C: TCanvas;
+  R: TRect;
+  S: string;
+  ColOrder: array of Integer;
+  SubIndex: Integer;
+  txtAlign: UINT;
+  i: Integer;
+  attr: PADAttribute;
 begin
   C := Sender.Canvas;
 
@@ -688,9 +688,6 @@ procedure TForm_GroupSelect.ListView_GroupsKeyDown(Sender: TObject;
   var Key: Word; Shift: TShiftState);
 var
   li: TListItem;
-  HitPoint: TPoint;
-  HitInfo: TLVHitTestInfo;
-  MsgRes: Integer;
 begin
   case Key of
     VK_SPACE: begin

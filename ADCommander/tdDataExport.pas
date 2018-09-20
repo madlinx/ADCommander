@@ -298,6 +298,9 @@ begin
     end;
   end;
 
+  if Terminated
+    then DeleteFile(PChar(FFileName));
+
   Clear;
 end;
 

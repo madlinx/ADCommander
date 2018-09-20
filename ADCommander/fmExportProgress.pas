@@ -13,6 +13,7 @@ type
     Label_Desription: TLabel;
     Label_Percentage: TLabel;
     Button_Cancel: TButton;
+    Label_FileName: TLabel;
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure Button_CancelClick(Sender: TObject);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
@@ -79,6 +80,8 @@ end;
 
 procedure TForm_ExportProgress.Execute(AFileName: TFileName; AFormat: TADCExportFormat);
 begin
+  Label_FileName.Caption := AFileName;
+
   case apAPI of
     ADC_API_LDAP: ObjExport := TADCExporter.Create(
       Self.Handle,
@@ -118,6 +121,7 @@ procedure TForm_ExportProgress.FormClose(Sender: TObject;
 begin
   Label_Percentage.Caption := '0%';
   ProgressBar.Position := 0;
+  Label_FileName.Caption := '';
   if FCallingForm <> nil then
   begin
     FCallingForm.Enabled := True;

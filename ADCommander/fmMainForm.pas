@@ -129,6 +129,7 @@ type
     N3: TMenuItem;
     N4: TMenuItem;
     Action_CreateOU: TAction;
+    Action_CreateGroup: TAction;
     procedure ComboBox_DCSelect(Sender: TObject);
     procedure SplitterPaint(Sender: TObject);
     procedure ComboBox_DCDrawItem(Control: TWinControl; Index: Integer;
@@ -193,6 +194,7 @@ type
     procedure Action_Export_AccessExecute(Sender: TObject);
     procedure Action_Export_ExcelExecute(Sender: TObject);
     procedure Action_CreateOUExecute(Sender: TObject);
+    procedure Action_CreateGroupExecute(Sender: TObject);
   protected
     FAccountListWndProc: TWndMethod;
     procedure WndProc(var Message: TMessage); override;
@@ -228,6 +230,7 @@ type
     procedure OnSettingsApply(Sender: TObject);
     procedure OnTargetContainerSelect(Sender: TObject; ACont: TADContainer);
     procedure OnMenuItem_CreateUser(Sender: TObject);
+    procedure OnMenuItem_CreateGroup(Sender: TObject);
     procedure OnMenuItem_CreateContainer(Sender: TObject);
     procedure OnMenuItem_DeleteContainer(Sender: TObject);
     procedure OnUserCreate(Sender: TObject; AOpenEditor: Boolean);
@@ -248,7 +251,8 @@ implementation
 
 uses dmDataModule, fmSettings, fmPasswordReset, fmDameWare, fmComputerInfo,
   fmGroupInfo, fmRename, fmContainerSelection, fmCreateUser, fmUserInfo,
-  fmQuickMessage, fmWorkstationInfo, fmCreateContainer, fmExportProgress;
+  fmQuickMessage, fmWorkstationInfo, fmCreateContainer, fmExportProgress,
+  fmCreateGroup;
 
 {$R *.dfm}
 
@@ -519,6 +523,11 @@ begin
   end;
 end;
 
+procedure TADCmd_MainForm.Action_CreateGroupExecute(Sender: TObject);
+begin
+  OnMenuItem_CreateGroup(Self);
+end;
+
 procedure TADCmd_MainForm.Action_AccList_RefreshExecute(Sender: TObject);
 var
   res: DWORD;
@@ -632,6 +641,8 @@ begin
 
     with DM1.SaveDialog do
     begin
+      Filter := '';
+
       FileName := Format('adcmd_%s', [FormatDateTime('yyyymmddhhnnss', Now)]);
       if DBProviderExists(DB_PROVIDER_ACE120) then
       begin
@@ -2150,6 +2161,15 @@ begin
   Self.Enabled := False;
 end;
 
+procedure TADCmd_MainForm.OnMenuItem_CreateGroup(Sender: TObject);
+begin
+  with Form_CreateGroup do
+  begin
+    Position := poMainFormCenter;
+    Show;
+  end;
+end;
+
 procedure TADCmd_MainForm.OnMenuItem_CreateUser(Sender: TObject);
 begin
 
@@ -2191,7 +2211,7 @@ begin
       lpszText := PChar(msgText);
     end;
 
-    if MessageBoxIndirect(MsgBoxParam) = mrYes then
+    if MessageBoxIndirect(MsgBoxParam) = IDYES then
     try
       case apAPI of
         ADC_API_LDAP: begin
@@ -3013,6 +3033,13 @@ begin
       mi.Data := PADContainer(Node.Data);
       mi.OnClick := OnMenuItem_CreateUser;
       mi.Enabled := (Node.IsFirstNode) or (PADContainer(Node.Data)^.CanContainClass('user'));
+      PopupMenu_TreeAD.Items[0].Add(mi);
+
+      mi := TMenuItemEx.Create(PopupMenu_TreeAD);
+      mi.Caption := 'Группа';
+      mi.Data := PADContainer(Node.Data);
+      mi.OnClick := OnMenuItem_CreateGroup;
+      mi.Enabled := (Node.IsFirstNode) or (PADContainer(Node.Data)^.CanContainClass('group'));
       PopupMenu_TreeAD.Items[0].Add(mi);
 
       mi := TMenuItemEx.Create(PopupMenu_TreeAD);

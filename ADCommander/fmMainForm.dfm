@@ -358,16 +358,21 @@ object ADCmd_MainForm: TADCmd_MainForm
             Caption = '-'
           end
           item
-            Action = Action_CreateOU
-            ImageIndex = 16
-            ShowCaption = False
-          end
-          item
             ChangesAllowed = []
             Action = Action_CreateUser
             ImageIndex = 12
             ShowCaption = False
             ShortCut = 32813
+          end
+          item
+            Action = Action_CreateGroup
+            ImageIndex = 17
+            ShowCaption = False
+          end
+          item
+            Action = Action_CreateOU
+            ImageIndex = 16
+            ShowCaption = False
           end
           item
             ChangesAllowed = []
@@ -475,13 +480,6 @@ object ADCmd_MainForm: TADCmd_MainForm
       ShortCut = 116
       OnExecute = Action_AccList_RefreshExecute
     end
-    object Action_CreateOU: TAction
-      Category = 'List_Accounts'
-      Caption = #1057#1086#1079#1076#1072#1090#1100' '#1087#1086#1076#1088#1072#1079#1076#1077#1083#1077#1085#1080#1077'...'
-      Hint = #1057#1086#1079#1076#1072#1090#1100' '#1087#1086#1076#1088#1072#1079#1076#1077#1083#1077#1085#1080#1077
-      ImageIndex = 16
-      OnExecute = Action_CreateOUExecute
-    end
     object Action_CreateUser: TAction
       Category = 'List_Accounts'
       Caption = #1057#1086#1079#1076#1072#1090#1100'...'
@@ -489,6 +487,20 @@ object ADCmd_MainForm: TADCmd_MainForm
       ImageIndex = 12
       ShortCut = 32813
       OnExecute = Action_CreateUserExecute
+    end
+    object Action_CreateGroup: TAction
+      Category = 'List_Accounts'
+      Caption = #1057#1086#1079#1076#1072#1090#1100' '#1075#1088#1091#1087#1087#1091'...'
+      Hint = #1057#1086#1079#1076#1072#1090#1100' '#1075#1088#1091#1087#1087#1091
+      ImageIndex = 17
+      OnExecute = Action_CreateGroupExecute
+    end
+    object Action_CreateOU: TAction
+      Category = 'List_Accounts'
+      Caption = #1057#1086#1079#1076#1072#1090#1100' '#1087#1086#1076#1088#1072#1079#1076#1077#1083#1077#1085#1080#1077'...'
+      Hint = #1057#1086#1079#1076#1072#1090#1100' '#1087#1086#1076#1088#1072#1079#1076#1077#1083#1077#1085#1080#1077
+      ImageIndex = 16
+      OnExecute = Action_CreateOUExecute
     end
     object Action_ShowUsers: TAction
       Category = 'List_Accounts'

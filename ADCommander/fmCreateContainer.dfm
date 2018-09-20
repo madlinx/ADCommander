@@ -3,7 +3,7 @@ object Form_CreateContainer: TForm_CreateContainer
   Top = 0
   BorderIcons = [biSystemMenu]
   BorderStyle = bsSingle
-  Caption = #1057#1086#1079#1076#1072#1090#1100' '#1087#1086#1076#1088#1072#1079#1076#1077#1083#1077#1085#1080#1077
+  Caption = #1053#1086#1074#1099#1081' '#1086#1073#1098#1077#1082#1090' - '#1055#1086#1076#1088#1072#1079#1076#1077#1083#1077#1085#1080#1077
   ClientHeight = 122
   ClientWidth = 429
   Color = clBtnFace
@@ -69,7 +69,6 @@ object Form_CreateContainer: TForm_CreateContainer
     Caption = #1054#1090#1084#1077#1085#1072
     TabOrder = 3
     OnClick = Button_CancelClick
-    ExplicitTop = 82
   end
   object Button_OK: TButton
     Left = 223
@@ -80,6 +79,5 @@ object Form_CreateContainer: TForm_CreateContainer
     Caption = #1054#1050
     TabOrder = 4
     OnClick = Button_OKClick
-    ExplicitTop = 82
   end
 end

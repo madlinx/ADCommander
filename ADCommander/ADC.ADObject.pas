@@ -42,6 +42,7 @@ type
         function AsString: string;
       end;
   private
+    FSelected: Boolean;
     FAttribute01: string;
     FAttribute02: string;
     FAttribute03: string;
@@ -106,6 +107,7 @@ type
     function IsPasswordNeverExpires: Boolean;
     property OnRefresh: TNotifyEvent read FOnRefresh write FOnRefresh;
   published
+    property Selected: Boolean read FSelected write FSelected;
     property Attribute01: string read FAttribute01 write FAttribute01;
     property Attribute02: string read FAttribute02 write FAttribute02;
     property Attribute03: string read FAttribute03 write FAttribute03;
@@ -172,8 +174,14 @@ type
       ADomainHostName: string; AMaxPwdAge: Int64); overload;
     procedure Refresh(ALDAP: PLDAP; AAttrCat: TAttrCatalog; RaiseEvent: Boolean = True); overload;
     procedure Refresh(ARootDSE: IADs; AAttrCat: TAttrCatalog; RaiseEvent: Boolean = True); overload;
-    procedure GetGroupMembers(ALDAP: PLDAP; AMembers: TADGroupMemberList); overload;
-    procedure GetGroupMembers(AMembers: TADGroupMemberList); overload;
+    procedure GetGroupMembers(ALDAP: PLDAP; AMembers: TADGroupMemberList;
+      AChainSearch: Boolean); overload;
+    procedure GetGroupMembers(AMembers: TADGroupMemberList;
+      AChainSearch: Boolean); overload;
+    procedure AddGroupMember(ALDAP: PLDAP; AMemberDN: string); overload;
+    procedure AddGroupMember(AMemberDN: string); overload;
+    procedure RemoveGroupMember(ALDAP: PLDAP; AMemberDN: string); overload;
+    procedure RemoveGroupMember(AMemberDN: string); overload;
     function SetUserPassword(ALDAP: PLDAP; APassword: string; AChangeOnLogon, AUnblock: Boolean): Boolean; overload;
     function SetUserPassword(ANewPassword: string; AChangeOnLogon, AUnblock: Boolean): Boolean; overload;
     function GetGroupDescription: string; overload;
@@ -257,6 +265,7 @@ end;
 
 constructor TADObject.Create;
 begin
+  FSelected := False;
   FThumbnailPhoto := TJPEGImage.Create;
   with FThumbnailPhoto do
   begin
@@ -763,6 +772,85 @@ begin
   end;
 end;
 
+procedure TADObjectHelper.AddGroupMember(ALDAP: PLDAP; AMemberDN: string);
+var
+  ldapBase: AnsiString;
+  g: PADGroup;
+  modArray: array of PLDAPMod;
+  valMember: array of PAnsiChar;
+  returnCode: ULONG;
+  i: Integer;
+begin
+  if not Self.IsGroup then Exit;
+
+  try
+    ldapBase := AnsiString(Self.distinguishedName);
+
+    SetLength(modArray, 2);
+    SetLength(valMember, 2);
+    valMember[0] := PAnsiChar(AnsiString(AMemberDN));
+
+    New(modArray[0]);
+    with modArray[0]^ do
+    begin
+      mod_type := 'member';
+      mod_op := LDAP_MOD_ADD;
+      modv_strvals := @valMember[0];
+    end;
+
+    returnCode := ldap_modify_ext_s(
+      ALDAP,
+      PAnsiChar(ldapBase),
+      @modArray[0],
+      nil,
+      nil
+    );
+
+    if returnCode <> LDAP_SUCCESS
+      then raise Exception.Create(ldap_err2stringW(returnCode));
+  finally
+    for i := Low(modArray) to High(modArray) do
+      if Assigned(modArray[i])
+        then Dispose(modArray[i]);
+
+    SetLength(modArray, 0);
+  end;
+end;
+
+procedure TADObjectHelper.AddGroupMember(AMemberDN: string);
+var
+  oGroup: IADSGroup;
+  hr: HRESULT;
+  memberDN: string;
+begin
+  if not Self.IsGroup then Exit;
+
+  CoInitialize(nil);
+  try
+    hr := ADsOpenObject(
+      PChar(Self.GetADSIPath_LDAP),
+      nil,
+      nil,
+      ADS_SECURE_AUTHENTICATION or ADS_SERVER_BIND,
+      IID_IADsGroup,
+      @oGroup
+    );
+
+    if Succeeded(hr) then
+    begin
+      memberDN := ReplaceStr(AMemberDN, '/', '\/');
+
+      if FDomainHostName.IsEmpty
+        then memberDN := Format('LDAP://%s', [memberDN])
+        else memberDN := Format('LDAP://%s/%s', [FDomainHostName, memberDN]);
+
+      oGroup.Add(memberDN);
+    end else raise Exception.Create(ADSIErrorToString);
+  finally
+    CoUnInitialize;
+  end;
+end;
+
 function TADObjectHelper.ChangeDisabledState: Boolean;
 var
   Obj: IADs;
@@ -1079,16 +1167,18 @@ begin
 end;
 
 procedure TADObjectHelper.GetGroupMembers(ALDAP: PLDAP;
-  AMembers: TADGroupMemberList);
+  AMembers: TADGroupMemberList; AChainSearch: Boolean);
 var
   ldapBase: AnsiString;
   ldapFilter: AnsiString;
+  filterMemberOf: AnsiString;
   ldapCookie: PLDAPBerVal;
   ldapPage: PLDAPControl;
   ldapControls: array[0..1] of PLDAPControl;
   ldapServerControls: PPLDAPControl;
   ldapEntry: PLDAPMessage;
   ldapValue: PPAnsiChar;
+  ldapBinValues: PPLDAPBerVal;
   ldapCount: ULONG;
   searchResult: PLDAPMessage;
   attrArray: array of PAnsiChar;
@@ -1132,19 +1222,25 @@ begin
   if searchResult <> nil
     then ldap_msgfree(searchResult);
 
-  SetLength(attrArray, 4);
+  SetLength(attrArray, 5);
   attrArray[0] := PAnsiChar('name');
   attrArray[1] := PAnsiChar('sAMAccountName');
   attrArray[2] := PAnsiChar('groupType');
-  attrArray[3] := nil;
+  attrArray[3] := PAnsiChar('primaryGroupID');
+  attrArray[4] := nil;
 
   try
     { Формируем фильтр объектов AD }
+    case AChainSearch of
+      True:  filterMemberOf := '(memberOf:1.2.840.113556.1.4.1941:=%s)(primaryGroupID=%d)';
+      False: filterMemberOf := '(memberOf=%s)(primaryGroupID=%d)';
+    end;
+
     ldapFilter := '(&' +
       '(|(objectclass=group)(&(objectCategory=person)(objectClass=user)))' +
       '(|' +
          System.AnsiStrings.Format(
-           '(memberOf:1.2.840.113556.1.4.1941:=%s)(primaryGroupID=%d)',
+           filterMemberOf,
            [Self.distinguishedName, Self.primaryGroupToken]
          ) +
       ')' +
@@ -1227,6 +1323,8 @@ begin
       while ldapEntry <> nil do
       begin
         New(m);
+        m^.Selected := False;
+
         dn := ldap_get_dn(ALDAP, ldapEntry);
         if dn <> nil then m^.distinguishedName := dn;
         ldap_memfree(dn);
@@ -1246,6 +1344,11 @@ begin
           then m^.SortKey := 1
           else m^.SortKey := 2;
         ldap_value_free(ldapValue);
+
+        ldapBinValues := ldap_get_values_len(ALDAP, ldapEntry, attrArray[3]);
+        if (ldapBinValues <> nil) and (ldapBinValues^.bv_len > 0)
+          then m^.primaryGroupID := StrToIntDef(ldapBinValues^.bv_val, 0);
+        ldap_value_free_len(ldapBinValues);
 
         AMembers.Add(m);
         ldapEntry := ldap_next_entry(ALDAP, ldapEntry);
@@ -1350,12 +1453,14 @@ begin
     then ldap_msgfree(searchResult);
 end;
 
-procedure TADObjectHelper.GetGroupMembers(AMembers: TADGroupMemberList);
+procedure TADObjectHelper.GetGroupMembers(AMembers: TADGroupMemberList;
+  AChainSearch: Boolean);
 var
   regEx: TRegEx;
   regExMatches: TMatchCollection;
   regExMatch: TMatch;
   objFilter: string;
+  filterMemberOf: string;
   pDomain: IADsDomain;
   hRes: HRESULT;
   SearchBase: string;
@@ -1375,11 +1480,12 @@ begin
   for regExMatch in regExMatches do
     SearchBase := SearchBase + IfThen(SearchBase.IsEmpty, '', ',') + regExMatch.Value;
 
-  SetLength(attrArray, 4);
+  SetLength(attrArray, 5);
   attrArray[0] := 'name';
   attrArray[1] := 'sAMAccountName';
   attrArray[2] := 'distinguishedName';
   attrArray[3] := 'groupType';
+  attrArray[4] := 'primaryGroupID';
 
   CoInitialize(nil);
   try
@@ -1419,11 +1525,16 @@ begin
       if not Succeeded(hRes)
         then raise Exception.Create(ADSIErrorToString);
 
+      case AChainSearch of
+        True:  filterMemberOf := '(memberOf:1.2.840.113556.1.4.1941:=%s)(primaryGroupID=%d)';
+        False: filterMemberOf := '(memberOf=%s)(primaryGroupID=%d)';
+      end;
+
       objFilter := '(&' +
         '(|(objectclass=group)(&(objectCategory=person)(objectClass=user)))' +
         '(|' +
            System.AnsiStrings.Format(
-             '(memberOf:1.2.840.113556.1.4.1941:=%s)(primaryGroupID=%d)',
+             filterMemberOf,
              [Self.distinguishedName, Self.primaryGroupToken]
            ) +
         ')' +
@@ -1443,6 +1554,8 @@ begin
       while (hRes <> S_ADS_NOMORE_ROWS) do
       begin
         New(m);
+        m^.Selected := False;
+
         hRes := SearchResult.GetColumn(SearchHandle, PWideChar(attrArray[0]), col);
         if Succeeded(hRes)
           then m^.name := col.pAdsvalues^.__MIDL____MIDL_itf_ads_0000_00000000.CaseIgnoreString;
@@ -1462,6 +1575,11 @@ begin
         if Succeeded(hRes)
           then m^.SortKey := 1
           else m^.SortKey := 2;
+        SearchResult.FreeColumn(col);
+
+        hRes := SearchResult.GetColumn(SearchHandle, PWideChar(attrArray[4]), col);
+        if Succeeded(hRes)
+          then m^.primaryGroupID := col.pAdsvalues^.__MIDL____MIDL_itf_ads_0000_00000000.Integer;
         SearchResult.FreeColumn(col);
 
         AMembers.Add(m);
@@ -1692,6 +1810,85 @@ begin
           then OnRefresh(Self);
     end;
     SearchRes.CloseSearchHandle(Pointer(SearchHandle));
+  end;
+end;
+
+procedure TADObjectHelper.RemoveGroupMember(ALDAP: PLDAP; AMemberDN: string);
+var
+  ldapBase: AnsiString;
+  g: PADGroup;
+  modArray: array of PLDAPMod;
+  valMember: array of PAnsiChar;
+  returnCode: ULONG;
+  i: Integer;
+begin
+  if not Self.IsGroup then Exit;
+
+  try
+    ldapBase := AnsiString(Self.distinguishedName);
+
+    SetLength(modArray, 2);
+    SetLength(valMember, 2);
+    valMember[0] := PAnsiChar(AnsiString(AMemberDN));
+
+    New(modArray[0]);
+    with modArray[0]^ do
+    begin
+      mod_type := 'member';
+      mod_op := LDAP_MOD_DELETE;
+      modv_strvals := @valMember[0];
+    end;
+
+    returnCode := ldap_modify_ext_s(
+      ALDAP,
+      PAnsiChar(ldapBase),
+      @modArray[0],
+      nil,
+      nil
+    );
+
+    if returnCode <> LDAP_SUCCESS
+      then raise Exception.Create(ldap_err2stringW(returnCode));
+  finally
+    for i := Low(modArray) to High(modArray) do
+      if Assigned(modArray[i])
+        then Dispose(modArray[i]);
+
+    SetLength(modArray, 0);
+  end;
+end;
+
+procedure TADObjectHelper.RemoveGroupMember(AMemberDN: string);
+var
+  oGroup: IADSGroup;
+  hr: HRESULT;
+  memberDN: string;
+begin
+  if not Self.IsGroup then Exit;
+
+  CoInitialize(nil);
+  try
+    hr := ADsOpenObject(
+      PChar(Self.GetADSIPath_LDAP),
+      nil,
+      nil,
+      ADS_SECURE_AUTHENTICATION or ADS_SERVER_BIND,
+      IID_IADsGroup,
+      @oGroup
+    );
+
+    if Succeeded(hr) then
+    begin
+      memberDN := ReplaceStr(AMemberDN, '/', '\/');
+
+      if FDomainHostName.IsEmpty
+        then memberDN := Format('LDAP://%s', [memberDN])
+        else memberDN := Format('LDAP://%s/%s', [FDomainHostName, memberDN]);
+
+      oGroup.Remove(memberDN);
+    end else raise Exception.Create(ADSIErrorToString);
+  finally
+    CoUnInitialize;
   end;
 end;
 

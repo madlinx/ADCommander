@@ -263,6 +263,14 @@
             <Form>Form_ExportProgress</Form>
             <FormType>dfm</FormType>
         </DCCReference>
+        <DCCReference Include="fmGroupMemeberSelection.pas">
+            <Form>Form_GroupMemberSelection</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
+        <DCCReference Include="fmCreateGroup.pas">
+            <Form>Form_CreateGroup</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>

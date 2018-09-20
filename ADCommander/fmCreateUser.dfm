@@ -3,7 +3,7 @@ object Form_CreateUser: TForm_CreateUser
   Top = 0
   BorderIcons = [biSystemMenu]
   BorderStyle = bsSingle
-  Caption = #1057#1086#1079#1076#1072#1090#1100' '#1091#1095#1077#1090#1085#1091#1102' '#1079#1072#1087#1080#1089#1100' '#1087#1086#1083#1100#1079#1086#1074#1072#1090#1077#1083#1103
+  Caption = #1053#1086#1074#1099#1081' '#1086#1073#1098#1077#1082#1090' - '#1059#1095#1077#1090#1085#1072#1103' '#1079#1072#1087#1080#1089#1100
   ClientHeight = 401
   ClientWidth = 568
   Color = clBtnFace
@@ -329,6 +329,10 @@ object Form_CreateUser: TForm_CreateUser
       Caption = 'TabSheet_Security'
       ImageIndex = 1
       TabVisible = False
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object Label_PasswordConfirmation: TLabel
         Left = 28
         Top = 58
@@ -394,6 +398,10 @@ object Form_CreateUser: TForm_CreateUser
       Caption = 'TabSheet_PersonalInfo'
       ImageIndex = 2
       TabVisible = False
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object Image: TImage
         Left = 432
         Top = 28
@@ -509,6 +517,10 @@ object Form_CreateUser: TForm_CreateUser
       Caption = 'TabSheet_Confirmation'
       ImageIndex = 3
       TabVisible = False
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object Label_FinishHint: TLabel
         Left = 28
         Top = 16

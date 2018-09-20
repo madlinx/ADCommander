@@ -1,8 +1,8 @@
-object Form_GroupSelect: TForm_GroupSelect
+object Form_GroupMemberSelection: TForm_GroupMemberSelection
   Left = 0
   Top = 0
   BorderIcons = [biSystemMenu]
-  Caption = #1043#1088#1091#1087#1087#1099' '#1073#1077#1079#1086#1087#1072#1089#1085#1086#1089#1090#1080
+  Caption = #1042#1099#1073#1077#1088#1080#1090#1077' '#1087#1086#1083#1100#1079#1086#1074#1072#1090#1077#1083#1077#1081
   ClientHeight = 411
   ClientWidth = 574
   Color = clBtnFace
@@ -13,13 +13,10 @@ object Form_GroupSelect: TForm_GroupSelect
   Font.Height = -11
   Font.Name = 'Tahoma'
   Font.Style = []
-  KeyPreview = True
   OldCreateOrder = False
   OnClose = FormClose
   OnCreate = FormCreate
   OnDestroy = FormDestroy
-  OnKeyDown = FormKeyDown
-  OnShow = FormShow
   DesignSize = (
     574
     411)
@@ -27,17 +24,24 @@ object Form_GroupSelect: TForm_GroupSelect
   TextHeight = 13
   object Label_Search: TLabel
     Left = 318
-    Top = 12
+    Top = 56
     Width = 34
     Height = 13
     Anchors = [akTop, akRight]
     Caption = #1055#1086#1080#1089#1082':'
   end
-  object ListView_Groups: TListView
+  object Label_Description: TLabel
     Left = 16
-    Top = 36
+    Top = 19
+    Width = 101
+    Height = 13
+    Caption = #1044#1086#1073#1072#1074#1080#1090#1100' '#1074' '#1075#1088#1091#1087#1087#1091':'
+  end
+  object ListView_Objects: TListView
+    Left = 16
+    Top = 80
     Width = 542
-    Height = 334
+    Height = 290
     Anchors = [akLeft, akTop, akRight, akBottom]
     Columns = <
       item
@@ -55,24 +59,58 @@ object Form_GroupSelect: TForm_GroupSelect
     RowSelect = True
     ParentDoubleBuffered = False
     ShowColumnHeaders = False
-    TabOrder = 1
+    TabOrder = 0
     ViewStyle = vsReport
-    OnClick = ListView_GroupsClick
-    OnData = ListView_GroupsData
-    OnDrawItem = ListView_GroupsDrawItem
-    OnKeyDown = ListView_GroupsKeyDown
-    OnMouseDown = ListView_GroupsMouseDown
-    OnResize = ListView_GroupsResize
+    OnClick = ListView_ObjectsClick
+    OnData = ListView_ObjectsData
+    OnDrawItem = ListView_ObjectsDrawItem
+    OnKeyDown = ListView_ObjectsKeyDown
+    OnMouseDown = ListView_ObjectsMouseDown
+    OnResize = ListView_ObjectsResize
   end
-  object Button_Cancel: TButton
-    Left = 483
-    Top = 378
-    Width = 75
-    Height = 25
-    Anchors = [akRight, akBottom]
-    Caption = #1054#1090#1084#1077#1085#1072
+  object Edit_Search: TButtonedEdit
+    Left = 358
+    Top = 53
+    Width = 200
+    Height = 21
+    Anchors = [akTop, akRight]
+    Images = ImageList_ToolBar
+    RightButton.ImageIndex = 3
+    TabOrder = 1
+    OnChange = Edit_SearchChange
+    OnRightButtonClick = Edit_SearchRightButtonClick
+  end
+  object ToolBar: TToolBar
+    Left = 16
+    Top = 53
+    Width = 49
+    Height = 22
+    Align = alCustom
+    AutoSize = True
+    DoubleBuffered = False
+    Images = ImageList_ToolBar
+    ParentDoubleBuffered = False
     TabOrder = 2
-    OnClick = Button_CancelClick
+    object ToolButton_SelectAll: TToolButton
+      Left = 0
+      Top = 0
+      Hint = #1042#1099#1073#1088#1072#1090#1100' '#1074#1089#1077
+      Caption = 'ToolButton_SelectAll'
+      ImageIndex = 1
+      ParentShowHint = False
+      ShowHint = True
+      OnClick = ToolButton_SelectAllClick
+    end
+    object ToolButton_SelectNone: TToolButton
+      Left = 23
+      Top = 0
+      Hint = #1054#1090#1084#1077#1085#1080#1090#1100' '#1074#1089#1077
+      Caption = 'ToolButton_SelectNone'
+      ImageIndex = 2
+      ParentShowHint = False
+      ShowHint = True
+      OnClick = ToolButton_SelectNoneClick
+    end
   end
   object Button_OK: TButton
     Left = 402
@@ -84,74 +122,32 @@ object Form_GroupSelect: TForm_GroupSelect
     TabOrder = 3
     OnClick = Button_OKClick
   end
-  object ToolBar: TToolBar
-    Left = 16
-    Top = 9
-    Width = 89
-    Height = 22
-    Align = alCustom
-    AutoSize = True
-    DoubleBuffered = False
-    Images = ImageList_ToolBar
-    ParentDoubleBuffered = False
-    TabOrder = 0
-    object ToolButton_Refresh: TToolButton
-      Left = 0
-      Top = 0
-      Hint = #1054#1073#1085#1086#1074#1080#1090#1100
-      Caption = 'ToolButton_Refresh'
-      ImageIndex = 0
-      ParentShowHint = False
-      ShowHint = True
-      OnClick = ToolButton_RefreshClick
-    end
-    object ToolButton_Separator1: TToolButton
-      Left = 23
-      Top = 0
-      Width = 8
-      Caption = 'ToolButton_Separator1'
-      ImageIndex = 1
-      Style = tbsSeparator
-    end
-    object ToolButton_SelectNone: TToolButton
-      Left = 31
-      Top = 0
-      Hint = #1054#1090#1084#1077#1085#1080#1090#1100' '#1074#1089#1077
-      Caption = 'ToolButton_SelectNone'
-      ImageIndex = 2
-      ParentShowHint = False
-      ShowHint = True
-      OnClick = ToolButton_SelectNoneClick
-    end
-    object ToolButton_SelectAll: TToolButton
-      Left = 54
-      Top = 0
-      Hint = #1042#1099#1073#1088#1072#1090#1100' '#1074#1089#1077
-      Caption = 'ToolButton_SelectAll'
-      ImageIndex = 1
-      ParentShowHint = False
-      ShowHint = True
-      OnClick = ToolButton_SelectAllClick
-    end
-  end
-  object Edit_Search: TButtonedEdit
-    Left = 358
-    Top = 8
-    Width = 200
-    Height = 21
-    Anchors = [akTop, akRight]
-    Images = ImageList_ToolBar
-    RightButton.ImageIndex = 3
+  object Button_Cancel: TButton
+    Left = 483
+    Top = 378
+    Width = 75
+    Height = 25
+    Anchors = [akRight, akBottom]
+    Caption = #1054#1090#1084#1077#1085#1072
     TabOrder = 4
-    OnChange = Edit_SearchChange
-    OnRightButtonClick = Edit_SearchRightButtonClick
+    OnClick = Button_CancelClick
+  end
+  object Edit_GroupName: TEdit
+    Left = 123
+    Top = 16
+    Width = 435
+    Height = 21
+    Anchors = [akLeft, akTop, akRight]
+    Color = clBtnFace
+    ReadOnly = True
+    TabOrder = 5
   end
   object ImageList_ToolBar: TImageList
     ColorDepth = cd32Bit
     Left = 16
     Top = 376
     Bitmap = {
-      494C010104000800640010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
+      494C0101040008006C0010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000002000000001002000000000000020
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

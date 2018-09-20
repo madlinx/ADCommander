@@ -205,10 +205,12 @@ type
 type
   PADGroupMember = ^TADGroupMember;
   TADGroupMember = record
+    Selected: Boolean;
     SortKey: Integer;
     name: string;
     sAMAccountName: string;
     distinguishedName: string;
+    primaryGroupID: Integer;
   end;
 
   TADGroupMemberList = class(TList)
@@ -220,6 +222,10 @@ type
     destructor Destroy; override;
     function Add(Value: PADGroupMember): Integer;
     procedure Clear; override;
+    procedure SetSelected(AIndex: Integer; ASelected: Boolean);
+    function SelCount: Integer;
+    function ContainsGroups: Boolean;
+    function ContainsMember(AMemberDN: string): Boolean;
     property Items[Index: Integer]: PADGroupMember read Get; default;
     property OwnsObjects: Boolean read FOwnsObjects write FOwnsObjects;
   end;
@@ -296,6 +302,7 @@ type
   TChangeUserProc = procedure (Sender: TObject) of object;
   TPwdChangeProc = procedure (Sender: TObject; AChangeOnLogon: Boolean) of object;
   TSelectGroupProc = procedure (Sender: TObject; AGroupList: TADGroupList) of object;
+  TSelectGroupMemberProc = procedure (Sender: TObject; AMemberList: TADGroupMemberList) of object;
   TApplyWorkstationsProc = procedure (Sender: TObject; AWorkstations: string) of object;
   TChangeEventProc = procedure (Sender: TObject; AMode: Byte; AEvent: TADEvent) of object;
   TCreateOrganizationalUnitProc = procedure (ANewDN: string) of object;
@@ -327,6 +334,34 @@ begin
   inherited Clear;
 end;
 
+function TADGroupMemberList.ContainsGroups: Boolean;
+var
+  i: Integer;
+begin
+  Result := False;
+
+  for i := 0 to Self.Count - 1 do
+  if Self.Items[i]^.SortKey = 1 then
+  begin
+    Result := True;
+    Break;
+  end;
+end;
+
+function TADGroupMemberList.ContainsMember(AMemberDN: string): Boolean;
+var
+  i: Integer;
+begin
+  Result := False;
+
+  for i := 0 to Self.Count - 1 do
+  if CompareText(Self.Items[i]^.distinguishedName, AMemberDN) = 0 then
+  begin
+    Result := True;
+    Break;
+  end;
+end;
+
 constructor TADGroupMemberList.Create(AOwnsObjects: Boolean);
 begin
   inherited Create;
@@ -343,6 +378,29 @@ end;
 function TADGroupMemberList.Get(Index: Integer): PADGroupMember;
 begin
   Result := PADGroupMember(inherited Get(Index));
+end;
+
+function TADGroupMemberList.SelCount: Integer;
+var
+  i: Integer;
+  res: Integer;
+begin
+  res := 0;
+
+  for i := 0 to Self.Count - 1 do
+    if Self.Items[i]^.Selected
+      then Inc(res);
+
+  Result := res;
+end;
+
+procedure TADGroupMemberList.SetSelected(AIndex: Integer; ASelected: Boolean);
+begin
+  try
+    Self.Items[AIndex]^.Selected := ASelected;
+  except
+
+  end;
 end;
 
 { TOrganizationalUnit }

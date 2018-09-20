@@ -4,7 +4,7 @@ object Form_ExportProgress: TForm_ExportProgress
   BorderIcons = [biSystemMenu]
   BorderStyle = bsSingle
   Caption = #1055#1088#1086#1075#1088#1077#1089#1089' '#1074#1099#1087#1086#1083#1085#1077#1085#1080#1103
-  ClientHeight = 105
+  ClientHeight = 103
   ClientWidth = 425
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -17,15 +17,15 @@ object Form_ExportProgress: TForm_ExportProgress
   OnCloseQuery = FormCloseQuery
   DesignSize = (
     425
-    105)
+    103)
   PixelsPerInch = 96
   TextHeight = 13
   object Label_Desription: TLabel
     Left = 16
     Top = 21
-    Width = 96
+    Width = 93
     Height = 13
-    Caption = #1069#1082#1089#1087#1086#1088#1090' '#1076#1072#1085#1085#1099#1093'...'
+    Caption = #1069#1082#1089#1087#1086#1088#1090' '#1076#1072#1085#1085#1099#1093' '#1074
   end
   object Label_Percentage: TLabel
     Left = 392
@@ -37,6 +37,15 @@ object Form_ExportProgress: TForm_ExportProgress
     Caption = '0%'
     ExplicitLeft = 440
   end
+  object Label_FileName: TLabel
+    Left = 115
+    Top = 21
+    Width = 246
+    Height = 13
+    AutoSize = False
+    Caption = 'Label_FileName'
+    EllipsisPosition = epPathEllipsis
+  end
   object ProgressBar: TProgressBar
     Left = 16
     Top = 40
@@ -44,16 +53,16 @@ object Form_ExportProgress: TForm_ExportProgress
     Height = 12
     Anchors = [akLeft, akTop, akRight]
     TabOrder = 0
-    ExplicitWidth = 441
   end
   object Button_Cancel: TButton
     Left = 334
-    Top = 67
+    Top = 65
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = #1054#1090#1084#1077#1085#1072
     TabOrder = 1
     OnClick = Button_CancelClick
+    ExplicitTop = 67
   end
 end
