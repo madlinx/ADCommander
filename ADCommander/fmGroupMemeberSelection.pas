@@ -40,6 +40,7 @@ type
     procedure ListView_ObjectsClick(Sender: TObject);
     procedure Button_CancelClick(Sender: TObject);
     procedure Button_OKClick(Sender: TObject);
+    procedure FormShow(Sender: TObject);
   private
     FGroup: TADObject;
     FCallingForm: TForm;
@@ -219,6 +220,11 @@ procedure TForm_GroupMemberSelection.FormDestroy(Sender: TObject);
 begin
   FObjects.Free;
   FObjectList.Free;
+end;
+
+procedure TForm_GroupMemberSelection.FormShow(Sender: TObject);
+begin
+  Edit_Search.SetFocus;
 end;
 
 procedure TForm_GroupMemberSelection.Initialize(AGroup: TADObject;

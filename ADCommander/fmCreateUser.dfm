@@ -254,7 +254,7 @@ object Form_CreateUser: TForm_CreateUser
       end
       object Edit_DomainDNSName: TEdit
         Left = 344
-        Top = 160
+        Top = 161
         Width = 192
         Height = 21
         TabStop = False
@@ -264,7 +264,7 @@ object Form_CreateUser: TForm_CreateUser
       end
       object Edit_sAMAccountName: TEdit
         Left = 344
-        Top = 187
+        Top = 188
         Width = 192
         Height = 21
         MaxLength = 20
@@ -329,10 +329,6 @@ object Form_CreateUser: TForm_CreateUser
       Caption = 'TabSheet_Security'
       ImageIndex = 1
       TabVisible = False
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object Label_PasswordConfirmation: TLabel
         Left = 28
         Top = 58
@@ -398,10 +394,6 @@ object Form_CreateUser: TForm_CreateUser
       Caption = 'TabSheet_PersonalInfo'
       ImageIndex = 2
       TabVisible = False
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object Image: TImage
         Left = 432
         Top = 28
@@ -517,10 +509,6 @@ object Form_CreateUser: TForm_CreateUser
       Caption = 'TabSheet_Confirmation'
       ImageIndex = 3
       TabVisible = False
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object Label_FinishHint: TLabel
         Left = 28
         Top = 16

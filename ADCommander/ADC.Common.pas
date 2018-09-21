@@ -62,6 +62,12 @@ procedure ServerBinding(ADcName: string; ARootDSE: Pointer;
 function ADCreateOU(ALDAP: PLDAP; AContainer: string; ANewOU: string): string; overload;
 function ADCreateOU(ARootDSE: IADS; AContainer: string; ANewOU: string): string; overload;
 function ADCreateOUDS(ARootDSE: IADS; AContainer: string; ANewOU: string): string;
+function ADCreateGroup(ALDAP: PLDAP; AContainer: string; AName, ASamAccountName: string;
+  AGroupType: DWORD): string; overload;
+function ADCreateGroup(ARootDSE: IADS; AContainer: string; AName, ASamAccountName: string;
+  AGroupType: DWORD): string; overload;
+function ADCreateGroupDS(ARootDSE: IADS; AContainer: string; AName, ASamAccountName: string;
+  AGroupType: DWORD): string; overload;
 function ADDeleteObject(ALDAP: PLDAP; ADN: string): Boolean; overload;
 function ADDeleteObject(ARootDSE: IADS; ADN: string): Boolean; overload;
 function ADDeleteObjectDS(ARootDSE: IADS; ADN: string): Boolean; overload;
@@ -1995,6 +2001,241 @@ begin
         if not Succeeded(hr)
           then raise Exception.Create(ADSIErrorToString);
         v := INewCont.Get('distinguishedName');
+        Result := VariantToStringWithDefault(v, '');
+        VariantClear(v);
+      end else raise Exception.Create(ADSIErrorToString);
+    end else raise Exception.Create(ADSIErrorToString);
+  finally
+    CoUninitialize;
+  end;
+end;
+
+function ADCreateGroup(ALDAP: PLDAP; AContainer: string; AName, ASamAccountName: string;
+  AGroupType: DWORD): string;
+var
+  ldapDN: AnsiString;
+  attrArray: array of PLDAPMod;
+  valClass: array of PAnsiChar;
+  valCN: array of PAnsiChar;
+  valSamAccountName: array of PAnsiChar;
+  valGroupType: array of PAnsiChar;
+  returnCode: ULONG;
+  i: Integer;
+begin
+  Result := '';
+
+  if AContainer.IsEmpty or AName.IsEmpty or ASamAccountName.IsEmpty
+    then Exit;
+
+  ldapDN := Format('CN=%s,%s', [ADEscapeReservedCharacters(AName), AContainer]);
+
+  SetLength(valClass, 3);
+  valClass[0] := PAnsiChar('top');
+  valClass[1] := PAnsiChar('group');
+
+  SetLength(valCN, 2);
+  valCN[0] := PAnsiChar(AnsiString(AName));
+
+  SetLength(attrArray, 3);
+
+  New(attrArray[0]);
+  with attrArray[0]^ do
+  begin
+    mod_op       := 0;
+    mod_type     := PAnsiChar('objectClass');
+    modv_strvals := @valClass[0];
+  end;
+
+  New(attrArray[1]);
+  with attrArray[1]^ do
+  begin
+    mod_op       := 0;
+    mod_type     := PAnsiChar('cn');
+    modv_strvals := @valCN[0];
+  end;
+
+  try
+    returnCode := ldap_add_ext_s(
+      ALDAP,
+      PAnsiChar(ldapDN),
+      @attrArray[0],
+      nil,
+      nil
+    );
+
+    if returnCode <> LDAP_SUCCESS
+      then raise Exception.Create(ldap_err2string(returnCode));
+
+    for i := Low(attrArray) to High(attrArray) do
+      if Assigned(attrArray[i])
+        then Dispose(attrArray[i]);
+
+    SetLength(valSamAccountName, 2);
+    valSamAccountName[0] := PAnsiChar(AnsiString(ASamAccountName));
+
+    SetLength(valGroupType, 2);
+    valGroupType[0] := PAnsiChar(AnsiString(IntToStr(AGroupType)));
+
+    SetLength(attrArray, 3);
+
+    New(attrArray[0]);
+    with attrArray[0]^ do
+    begin
+      mod_op       := LDAP_MOD_REPLACE;
+      mod_type     := PAnsiChar('samAccountName');
+      modv_strvals := @valSamAccountName[0];
+    end;
+
+    New(attrArray[1]);
+    with attrArray[1]^ do
+    begin
+      mod_op       := LDAP_MOD_REPLACE;
+      mod_type     := PAnsiChar('groupType');
+      modv_strvals := @valGroupType[0];
+    end;
+
+    returnCode := ldap_modify_ext_s(
+      ALDAP,
+      PAnsiChar(ldapDN),
+      @attrArray[0],
+      nil,
+      nil
+    );
+
+    if returnCode <> LDAP_SUCCESS
+      then raise Exception.Create(ldap_err2string(returnCode));
+
+    Result := ldapDN;
+  finally
+    for i := Low(attrArray) to High(attrArray) do
+      if Assigned(attrArray[i])
+        then Dispose(attrArray[i]);
+  end;
+end;
+
+function ADCreateGroup(ARootDSE: IADS; AContainer: string; AName, ASamAccountName: string;
+  AGroupType: DWORD): string;
+var
+  v: OleVariant;
+  hostName: string;
+  hr: HRESULT;
+  ICont: IADsContainer;
+  INewGroup: IADs;
+begin
+  Result := '';
+  ICont := nil;
+  INewGroup := nil;
+
+  if AContainer.IsEmpty or AName.IsEmpty or ASamAccountName.IsEmpty
+    then Exit;
+
+  CoInitialize(nil);
+
+  try
+    v := ARootDSE.Get('dnsHostName');
+    hostName := VariantToStringWithDefault(v, '');
+    VariantClear(v);
+
+    hr := ADsOpenObject(
+      PChar(Format('LDAP://%s/%s', [hostName, AContainer])),
+      nil,
+      nil,
+      ADS_SECURE_AUTHENTICATION or ADS_SERVER_BIND,
+      IID_IADsContainer,
+      @ICont
+    );
+
+    if Succeeded(hr) then
+    begin
+      INewGroup := ICont.Create(
+        'group',
+        'CN=' + ADEscapeReservedCharacters(AName)
+      ) as IADs;
+
+      if INewGroup <> nil then
+      begin
+        INewGroup.Put('samAccountName', ASamAccountName);
+        INewGroup.Put('groupType', AGroupType);
+        INewGroup.SetInfo;
+        v := INewGroup.Get('distinguishedName');
+        Result := VariantToStringWithDefault(v, '');
+        VariantClear(v);
+      end else raise Exception.Create(ADSIErrorToString);
+    end else raise Exception.Create(ADSIErrorToString);
+  finally
+    CoUninitialize;
+  end;
+end;
+
+function ADCreateGroupDS(ARootDSE: IADS; AContainer: string; AName, ASamAccountName: string;
+  AGroupType: DWORD): string;
+var
+  v: OleVariant;
+  hostName: string;
+  hr: HRESULT;
+  attrArray: array of ADS_ATTR_INFO;
+  valClass: ADSVALUE;
+  IDir: IDirectoryObject;
+  IDisp: IDispatch;
+  INewGroup: IADs;
+begin
+  Result := '';
+  IDir := nil;
+  INewGroup := nil;
+
+  if AContainer.IsEmpty or AName.IsEmpty or ASamAccountName.IsEmpty
+    then Exit;
+
+  CoInitialize(nil);
+
+  try
+    v := ARootDSE.Get('dnsHostName');
+    hostName := VariantToStringWithDefault(v, '');
+    VariantClear(v);
+
+    SetLength(attrArray, 1);
+
+    with attrArray[0] do
+    begin
+      pszAttrName   := 'objectClass';
+      dwControlCode := ADS_ATTR_UPDATE;
+      dwADsType     := ADSTYPE_CASE_IGNORE_STRING;
+      pADsValues    := @valClass;
+      dwNumValues   := 1;
+    end;
+
+    valClass.dwType := ADSTYPE_CASE_IGNORE_STRING;
+    valClass.__MIDL____MIDL_itf_ads_0000_00000000.CaseIgnoreString := PChar('group');
+
+    hr := ADsOpenObject(
+      PChar(Format('LDAP://%s/%s', [hostName, AContainer])),
+      nil,
+      nil,
+      ADS_SECURE_AUTHENTICATION or ADS_SERVER_BIND,
+      IID_IDirectoryObject,
+      @IDir
+    );
+
+    if Succeeded(hr) then
+    begin
+      hr := IDir.CreateDSObject(
+        PChar('CN=' + ADEscapeReservedCharacters(AName)),
+        @attrArray[0],
+        Length(attrArray),
+        IDisp
+      );
+
+      if Succeeded(hr) then
+      begin
+        hr := IDisp.QueryInterface(IID_IADsGroup, INewGroup);
+        if not Succeeded(hr)
+          then raise Exception.Create(ADSIErrorToString);
+
+        INewGroup.Put('samAccountName', ASamAccountName);
+        INewGroup.Put('groupType', AGroupType);
+        INewGroup.SetInfo;
+
+        v := INewGroup.Get('distinguishedName');
         Result := VariantToStringWithDefault(v, '');
         VariantClear(v);
       end else raise Exception.Create(ADSIErrorToString);

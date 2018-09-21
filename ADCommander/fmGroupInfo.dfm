@@ -59,7 +59,6 @@ object Form_GroupInfo: TForm_GroupInfo
     Color = clBtnFace
     ReadOnly = True
     TabOrder = 0
-    ExplicitWidth = 457
   end
   object ListView_Members: TListView
     Left = 16
@@ -83,8 +82,6 @@ object Form_GroupInfo: TForm_GroupInfo
     ViewStyle = vsReport
     OnData = ListView_MembersData
     OnDrawItem = ListView_MembersDrawItem
-    ExplicitWidth = 537
-    ExplicitHeight = 283
   end
   object Edit_Description: TEdit
     Left = 96
@@ -94,7 +91,6 @@ object Form_GroupInfo: TForm_GroupInfo
     Anchors = [akLeft, akTop, akRight]
     MaxLength = 1024
     TabOrder = 1
-    ExplicitWidth = 457
   end
   object Button_Close: TButton
     Left = 483
@@ -105,8 +101,6 @@ object Form_GroupInfo: TForm_GroupInfo
     Caption = #1047#1072#1082#1088#1099#1090#1100
     TabOrder = 5
     OnClick = Button_CloseClick
-    ExplicitLeft = 478
-    ExplicitTop = 397
   end
   object Button_Apply: TButton
     Left = 402
@@ -117,8 +111,6 @@ object Form_GroupInfo: TForm_GroupInfo
     Caption = #1055#1088#1080#1084#1077#1085#1080#1090#1100
     TabOrder = 6
     OnClick = Button_ApplyClick
-    ExplicitLeft = 397
-    ExplicitTop = 397
   end
   object Button_OK: TButton
     Left = 321
@@ -129,8 +121,6 @@ object Form_GroupInfo: TForm_GroupInfo
     Caption = 'OK'
     TabOrder = 7
     OnClick = Button_OKClick
-    ExplicitLeft = 316
-    ExplicitTop = 397
   end
   object Edit_Search: TButtonedEdit
     Left = 358
@@ -143,7 +133,6 @@ object Form_GroupInfo: TForm_GroupInfo
     TabOrder = 3
     OnChange = Edit_SearchChange
     OnRightButtonClick = Edit_SearchRightButtonClick
-    ExplicitLeft = 353
   end
   object ToolBar: TToolBar
     Left = 16
@@ -219,7 +208,7 @@ object Form_GroupInfo: TForm_GroupInfo
     Left = 16
     Top = 376
     Bitmap = {
-      494C010107000800B40010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
+      494C010107000800B80010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000002000000001002000000000000020
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

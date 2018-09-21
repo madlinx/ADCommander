@@ -418,6 +418,7 @@ procedure TForm_GroupInfo.ToolButton_AddMemberClick(Sender: TObject);
 begin
   with Form_GroupMemberSelection do
   begin
+    ListView_ObjectsResize(Self);
     Initialize(FObj, List_ObjFull);
     CallingForm := Self;
     OnAddMembers := Self.OnAddMembers;

@@ -238,6 +238,7 @@ type
     procedure OnComputerChange(Sender: TObject);
     procedure OnPasswordChange(Sender: TObject; AChangeOnLogon: Boolean);
     procedure OnOrganizationalUnitCreate(ANewDN: string);
+    procedure OnGroupCreate(ANewDN: string);
   public
     { Public declarations }
     procedure UpdateDCList;
@@ -2163,11 +2164,28 @@ end;
 
 procedure TADCmd_MainForm.OnMenuItem_CreateGroup(Sender: TObject);
 begin
+//  Form_CreateContainer.CallingForm := Self;
+//  Form_CreateContainer.DomainController := SelectedDC;
+//  Form_CreateContainer.OnOrganizationalUnitCreate := OnOrganizationalUnitCreate;
+//  if Sender is TMenuItemEx
+//    then if Assigned(TMenuItemEx(Sender).Data)
+//      then Form_CreateContainer.Container := PADContainer(TMenuItemEx(Sender).Data)^;
+//  Form_CreateContainer.Position := poMainFormCenter;
+//  Form_CreateContainer.Show;
+//  Self.Enabled := False;
+
   with Form_CreateGroup do
   begin
+    CallingForm := Self;
+    DomainController := SelectedDC;
+    OnGroupCreate := Self.OnGroupCreate;
+    if Sender is TMenuItemEx
+      then if Assigned(TMenuItemEx(Sender).Data)
+        then Container := PADContainer(TMenuItemEx(Sender).Data)^;
     Position := poMainFormCenter;
     Show;
   end;
+  Self.Enabled := False;
 end;
 
 procedure TADCmd_MainForm.OnMenuItem_CreateUser(Sender: TObject);
@@ -2283,6 +2301,7 @@ begin
   case obj.ObjectType of
     otUser: msgText := Format(msgTemplate, ['пользователя', obj.name]);
     otWorkstation: msgText := Format(msgTemplate, ['компьютер', obj.name]);
+    otGroup: msgText := Format(msgTemplate, ['группу', obj.name]);
     else msgText := Format(msgTemplate, ['объект', obj.name]);
   end;
 
@@ -3152,6 +3171,25 @@ begin
   );
 end;
 
+procedure TADCmd_MainForm.OnGroupCreate(ANewDN: string);
+var
+  i: Integer;
+  o: TADObject;
+begin
+  if not ANewDN.IsEmpty then
+  begin
+    o := TADObject.Create;
+    o.distinguishedName := ANewDN;
+
+    i := List_ObjFull.Add(o);
+
+    case apAPI of
+      ADC_API_LDAP: List_ObjFull[i].Refresh(LDAPBinding, List_Attributes);
+      ADC_API_ADSI: List_ObjFull[i].Refresh(ADSIBinding, List_Attributes);
+    end;
+  end;
+end;
+
 procedure TADCmd_MainForm.OnInPlaceEditExit(Sender: TObject);
 begin
   with FInPlaceEdit do
@@ -3280,7 +3318,7 @@ begin
     PopupMenu_ListAcc.Items[MENU_REMOVE_ACC].Enabled := True;
 
     PopupMenu_ListAcc.Items[MENU_DELETE_ACC].Enabled :=
-      List_Obj[i].ObjectType in [otUser, otWorkstation];
+      List_Obj[i].ObjectType in [otUser, otWorkstation, otGroup];
   end;
 end;
 

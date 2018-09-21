@@ -17,6 +17,7 @@ object Form_GroupMemberSelection: TForm_GroupMemberSelection
   OnClose = FormClose
   OnCreate = FormCreate
   OnDestroy = FormDestroy
+  OnShow = FormShow
   DesignSize = (
     574
     411)
@@ -59,7 +60,7 @@ object Form_GroupMemberSelection: TForm_GroupMemberSelection
     RowSelect = True
     ParentDoubleBuffered = False
     ShowColumnHeaders = False
-    TabOrder = 0
+    TabOrder = 3
     ViewStyle = vsReport
     OnClick = ListView_ObjectsClick
     OnData = ListView_ObjectsData
@@ -76,7 +77,7 @@ object Form_GroupMemberSelection: TForm_GroupMemberSelection
     Anchors = [akTop, akRight]
     Images = ImageList_ToolBar
     RightButton.ImageIndex = 3
-    TabOrder = 1
+    TabOrder = 2
     OnChange = Edit_SearchChange
     OnRightButtonClick = Edit_SearchRightButtonClick
   end
@@ -90,7 +91,7 @@ object Form_GroupMemberSelection: TForm_GroupMemberSelection
     DoubleBuffered = False
     Images = ImageList_ToolBar
     ParentDoubleBuffered = False
-    TabOrder = 2
+    TabOrder = 1
     object ToolButton_SelectAll: TToolButton
       Left = 0
       Top = 0
@@ -119,7 +120,7 @@ object Form_GroupMemberSelection: TForm_GroupMemberSelection
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = 'OK'
-    TabOrder = 3
+    TabOrder = 5
     OnClick = Button_OKClick
   end
   object Button_Cancel: TButton
@@ -137,17 +138,18 @@ object Form_GroupMemberSelection: TForm_GroupMemberSelection
     Top = 16
     Width = 435
     Height = 21
+    TabStop = False
     Anchors = [akLeft, akTop, akRight]
     Color = clBtnFace
     ReadOnly = True
-    TabOrder = 5
+    TabOrder = 0
   end
   object ImageList_ToolBar: TImageList
     ColorDepth = cd32Bit
     Left = 16
     Top = 376
     Bitmap = {
-      494C0101040008006C0010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
+      494C010104000800740010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000002000000001002000000000000020
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
