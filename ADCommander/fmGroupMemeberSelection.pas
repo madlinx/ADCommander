@@ -96,9 +96,9 @@ var
 begin
   ResultList := TADGroupMemberList.Create;
 
-  for i := FObjects.Count - 1 downto 0 do
+  for i := FObjectList.Count - 1 downto 0 do
   begin
-    m := FObjects[i];
+    m := FObjectList[i];
 
     if m^.Selected then
     try

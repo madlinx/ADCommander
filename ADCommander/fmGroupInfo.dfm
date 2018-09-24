@@ -35,19 +35,25 @@ object Form_GroupInfo: TForm_GroupInfo
   end
   object Label_Description: TLabel
     Left = 16
-    Top = 43
+    Top = 70
     Width = 53
     Height = 13
     Caption = #1054#1087#1080#1089#1072#1085#1080#1077':'
   end
   object Label_Search: TLabel
     Left = 318
-    Top = 80
+    Top = 107
     Width = 34
     Height = 13
     Anchors = [akTop, akRight]
     Caption = #1055#1086#1080#1089#1082':'
-    ExplicitLeft = 308
+  end
+  object Label_GroupType: TLabel
+    Left = 16
+    Top = 43
+    Width = 62
+    Height = 13
+    Caption = #1058#1080#1087' '#1075#1088#1091#1087#1087#1099':'
   end
   object Edit_Name: TEdit
     Left = 96
@@ -62,9 +68,9 @@ object Form_GroupInfo: TForm_GroupInfo
   end
   object ListView_Members: TListView
     Left = 16
-    Top = 104
+    Top = 131
     Width = 542
-    Height = 263
+    Height = 236
     Anchors = [akLeft, akTop, akRight, akBottom]
     Columns = <
       item
@@ -78,19 +84,19 @@ object Form_GroupInfo: TForm_GroupInfo
     ReadOnly = True
     ParentDoubleBuffered = False
     ShowColumnHeaders = False
-    TabOrder = 4
+    TabOrder = 5
     ViewStyle = vsReport
     OnData = ListView_MembersData
     OnDrawItem = ListView_MembersDrawItem
   end
   object Edit_Description: TEdit
     Left = 96
-    Top = 40
+    Top = 67
     Width = 462
     Height = 21
     Anchors = [akLeft, akTop, akRight]
     MaxLength = 1024
-    TabOrder = 1
+    TabOrder = 2
   end
   object Button_Close: TButton
     Left = 483
@@ -99,7 +105,7 @@ object Form_GroupInfo: TForm_GroupInfo
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = #1047#1072#1082#1088#1099#1090#1100
-    TabOrder = 5
+    TabOrder = 6
     OnClick = Button_CloseClick
   end
   object Button_Apply: TButton
@@ -109,7 +115,7 @@ object Form_GroupInfo: TForm_GroupInfo
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = #1055#1088#1080#1084#1077#1085#1080#1090#1100
-    TabOrder = 6
+    TabOrder = 7
     OnClick = Button_ApplyClick
   end
   object Button_OK: TButton
@@ -119,24 +125,24 @@ object Form_GroupInfo: TForm_GroupInfo
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = 'OK'
-    TabOrder = 7
+    TabOrder = 8
     OnClick = Button_OKClick
   end
   object Edit_Search: TButtonedEdit
     Left = 358
-    Top = 77
+    Top = 104
     Width = 200
     Height = 21
     Anchors = [akTop, akRight]
     Images = ImageList_ToolBar
     RightButton.ImageIndex = 3
-    TabOrder = 3
+    TabOrder = 4
     OnChange = Edit_SearchChange
     OnRightButtonClick = Edit_SearchRightButtonClick
   end
   object ToolBar: TToolBar
     Left = 16
-    Top = 77
+    Top = 104
     Width = 121
     Height = 22
     Align = alCustom
@@ -144,7 +150,7 @@ object Form_GroupInfo: TForm_GroupInfo
     DoubleBuffered = False
     Images = ImageList_ToolBar
     ParentDoubleBuffered = False
-    TabOrder = 2
+    TabOrder = 3
     object ToolButton_Refresh: TToolButton
       Left = 0
       Top = 0
@@ -203,12 +209,23 @@ object Form_GroupInfo: TForm_GroupInfo
       OnClick = ToolButton_AddMemberClick
     end
   end
+  object Edit_GroupType: TEdit
+    Left = 96
+    Top = 40
+    Width = 462
+    Height = 21
+    Anchors = [akLeft, akTop, akRight]
+    AutoSelect = False
+    Color = clBtnFace
+    ReadOnly = True
+    TabOrder = 1
+  end
   object ImageList_ToolBar: TImageList
     ColorDepth = cd32Bit
     Left = 16
     Top = 376
     Bitmap = {
-      494C010107000800B80010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
+      494C010107000800BC0010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000002000000001002000000000000020
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

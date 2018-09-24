@@ -29,6 +29,8 @@ type
     ToolButton_AddMember: TToolButton;
     ToolButton_ChainSearch: TToolButton;
     ToolButton_Separator2: TToolButton;
+    Label_GroupType: TLabel;
+    Edit_GroupType: TEdit;
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure FormCreate(Sender: TObject);
@@ -58,6 +60,7 @@ type
     procedure SetCallingForm(const Value: TForm);
     procedure SetObject(const Value: TADObject);
     procedure OnAddMembers(Sender: TObject; AMemberList: TADGroupMemberList);
+    function GroupTypeToString(AGroupType: DWORD): string;
   public
     property CallingForm: TForm write SetCallingForm;
     property GroupObject: TADObject read FObj write SetObject;
@@ -260,6 +263,24 @@ begin
   Button_Close.SetFocus;
 end;
 
+function TForm_GroupInfo.GroupTypeToString(AGroupType: DWORD): string;
+var
+  res: string;
+begin
+  if AGroupType and ADS_GROUP_TYPE_LOCAL_GROUP > 0
+    then res := 'Локальная в домене'
+    else if AGroupType and ADS_GROUP_TYPE_GLOBAL_GROUP > 0
+      then res := 'Глобальная'
+      else if AGroupType and ADS_GROUP_TYPE_UNIVERSAL_GROUP > 0
+        then res := 'Универсальная';
+
+  if AGroupType and ADS_GROUP_TYPE_SECURITY_ENABLED > 0
+    then res := res + ' группа безопасности'
+    else res := res + ' группа распространения';
+
+  Result := res;
+end;
+
 procedure TForm_GroupInfo.ListViewWndProc(var Msg: TMessage);
 begin
   ShowScrollBar(ListView_Members.Handle, SB_HORZ, False);
@@ -395,6 +416,8 @@ begin
   if FObj <> nil then
   begin
     Edit_Name.Text := FObj.name;
+
+    Edit_GroupType.Text := GroupTypeToString(FObj.groupType);
 
     case apAPI of
       ADC_API_LDAP: begin
