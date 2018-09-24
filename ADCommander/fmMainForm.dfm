@@ -365,11 +365,13 @@ object ADCmd_MainForm: TADCmd_MainForm
             ShortCut = 32813
           end
           item
+            ChangesAllowed = []
             Action = Action_CreateGroup
             ImageIndex = 17
             ShowCaption = False
           end
           item
+            ChangesAllowed = []
             Action = Action_CreateOU
             ImageIndex = 16
             ShowCaption = False
@@ -441,8 +443,16 @@ object ADCmd_MainForm: TADCmd_MainForm
             Action = Action_Settings
             ImageIndex = 6
             ShowCaption = False
+          end
+          item
+            ChangesAllowed = []
+            Visible = False
+            Action = Action_About
+            ImageIndex = 18
+            ShowCaption = False
           end>
         ActionBar = ActionToolBar_Acc
+        AutoSize = False
       end>
     Images = DM1.ImageList_Main
     Left = 264
@@ -561,6 +571,14 @@ object ADCmd_MainForm: TADCmd_MainForm
       Hint = #1053#1072#1089#1090#1088#1086#1081#1082#1080
       ImageIndex = 6
       OnExecute = Action_SettingsExecute
+    end
+    object Action_About: TAction
+      Category = 'List_Accounts'
+      Caption = #1054' '#1087#1088#1086#1075#1088#1072#1084#1084#1077
+      Hint = #1054' '#1087#1088#1086#1075#1088#1072#1084#1084#1077
+      ImageIndex = 18
+      Visible = False
+      OnExecute = Action_AboutExecute
     end
   end
   object PopupMenu_ListAcc: TPopupMenu

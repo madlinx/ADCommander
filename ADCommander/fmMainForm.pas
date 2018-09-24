@@ -130,6 +130,7 @@ type
     N4: TMenuItem;
     Action_CreateOU: TAction;
     Action_CreateGroup: TAction;
+    Action_About: TAction;
     procedure ComboBox_DCSelect(Sender: TObject);
     procedure SplitterPaint(Sender: TObject);
     procedure ComboBox_DCDrawItem(Control: TWinControl; Index: Integer;
@@ -195,6 +196,7 @@ type
     procedure Action_Export_ExcelExecute(Sender: TObject);
     procedure Action_CreateOUExecute(Sender: TObject);
     procedure Action_CreateGroupExecute(Sender: TObject);
+    procedure Action_AboutExecute(Sender: TObject);
   protected
     FAccountListWndProc: TWndMethod;
     procedure WndProc(var Message: TMessage); override;
@@ -527,6 +529,11 @@ end;
 procedure TADCmd_MainForm.Action_CreateGroupExecute(Sender: TObject);
 begin
   OnMenuItem_CreateGroup(Self);
+end;
+
+procedure TADCmd_MainForm.Action_AboutExecute(Sender: TObject);
+begin
+  {}
 end;
 
 procedure TADCmd_MainForm.Action_AccList_RefreshExecute(Sender: TObject);
