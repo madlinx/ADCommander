@@ -213,7 +213,6 @@ type
   TDhcpV4FailoverGetClientInfo = function(ServerIpAddress: PWideChar;
     SearchInfo: LPDHCP_SEARCH_INFO; ClientInfo: LPDHCPV4_FAILOVER_CLIENT_INFO): DWORD; stdcall;
 
-
 function DhcpEnumServers(Flags: DWORD; IdInfo: LPVOID; Servers: LPDHCP_SERVER_INFO_ARRAY;
   CallbackFn: LPVOID; CallbackData: LPVOID): DWORD; stdcall;
 function DhcpEnumSubnets(ServerIpAddress: PWideChar; var ResumeHandle: DHCP_RESUME_HANDLE;
