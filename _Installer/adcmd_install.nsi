@@ -35,7 +35,7 @@
   Name "${APP_NAME}"
   
   !getdllversion "..\Win32\Release\adcmd.exe" v
-  OutFile "adcommander_${v1}.${v2}.${v3}_32bit-64bit.exe"
+  OutFile "adcommander_${v1}.${v2}.${v3}.${v4}_32bit-64bit.exe"
   
   ;Default installation folder
   InstallDir "$PROGRAMFILES\${APP_NAME}"

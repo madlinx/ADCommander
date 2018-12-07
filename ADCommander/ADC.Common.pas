@@ -52,8 +52,9 @@ function EncodeIP(AIP: string): Cardinal;
 function DecodeIP(AIP: Cardinal): string;
 procedure GetIPAddress(AClient: string; out AInfo: PIPAddr);
 procedure GetDHCPInfo(AClient: string; out AInfo: PDHCPInfo);
+procedure GetDHCPInfoEx(AClient: string; out AInfo: PDHCPInfo);
 procedure GetDHCPInfoV4(AClient: string; out AInfo: PDHCPInfo);
-procedure FreeDHCPClientInfoMemory(pClientInfo: LPDHCP_CLIENT_INFO); overload;
+procedure FreeDHCPClientInfoMemory(pClientInfo: PDHCP_CLIENT_INFO); overload;
 procedure FreeDHCPClientInfoMemory(pClientInfo: LPDHCP_CLIENT_INFO_PB); overload;
 procedure ServerBinding(ADcDnsName: string; out ALDAP: PLDAP;
   AOnException: TExceptionProc); overload;
@@ -1464,7 +1465,7 @@ var
   returnCode: DWORD;
   srvArr: PDHCPDS_SERVERS;
   psInfo: LPDHCP_SEARCH_INFO;
-  pcInfo: LPDHCP_CLIENT_INFO;
+  pcInfo: PDHCP_CLIENT_INFO;
   clientName: string;
 begin
   @DhcpGetClientInfo := GetProcAddress(
@@ -1529,6 +1530,137 @@ begin
       HeapFree(GetProcessHeap, HEAP_ZERO_MEMORY, psInfo);
       psInfo := nil;
     end;
+  end;
+end;
+
+procedure GetDHCPInfoEx(AClient: string; out AInfo: PDHCPInfo);
+var
+  i: Integer;
+  bFound: Boolean;
+  returnCode: DWORD;
+  aServers: PDHCPDS_SERVERS;
+
+  retSubnets: DWORD;
+  hSubnetsResume: DHCP_RESUME_HANDLE;
+  aSubnets: LPDHCP_IP_ARRAY;
+  iSubnets: Integer;
+  Subnets: LPDHCP_IP_ADDRESS;
+  SubnetCount: Integer;
+
+  retClients: DWORD;
+  hClientsResume: DHCP_RESUME_HANDLE;
+  aClients: LPDHCP_CLIENT_INFO_ARRAY;
+  iClients: Integer;
+  Clients: LPDHCP_CLIENT_INFO;
+  ClientCount: Integer;
+
+  ElementsRead: DWORD;
+  ElementsTotal: DWORD;
+begin
+  bFound := False;
+  aServers := nil;
+  ZeroMemory(AInfo, SizeOf(TDHCPInfo));
+  returnCode := DhcpEnumServers(
+    0,
+    nil,
+    @aServers,
+    nil,
+    nil
+  );
+
+  if (returnCode = ERROR_SUCCESS) then
+  for i := 0 to aServers.NumElements - 1 do
+  begin
+    hSubnetsResume := 0;
+    ElementsRead := 0;
+    ElementsTotal := 0;
+    repeat
+      aSubnets := nil;
+
+      retSubnets := DhcpEnumSubnets(
+        PChar(DecodeIP(aServers^.Servers[i].ServerAddress)),
+        hSubnetsResume,
+        500,
+        @aSubnets,
+        ElementsRead,
+        ElementsTotal
+      );
+
+      if retSubnets = ERROR_SUCCESS then
+      begin
+        SubnetCount := aSubnets^.NumElements;
+        Subnets := aSubnets^.Elements;
+        iSubnets := 0;
+        while iSubnets < SubnetCount do
+        begin
+          hClientsResume := 0;
+          ElementsRead := 0;
+          ElementsTotal := 0;
+          repeat
+            aClients := nil;
+
+            retClients := DhcpEnumSubnetClients(
+              PChar(DecodeIP(aServers^.Servers[i].ServerAddress)),
+              DHCP_IP_ADDRESS(Subnets^),
+              hClientsResume,
+              65536,
+              @aClients,
+              ElementsRead,
+              ElementsTotal
+            );
+
+            if retClients in [ERROR_SUCCESS, ERROR_MORE_DATA] then
+            begin
+              ClientCount := aClients^.NumElements;
+              Clients := aClients^.Clients;
+              iClients := 0;
+              while iClients < ClientCount do
+              begin
+                OutputDebugString(PChar(DecodeIP(Clients^.ClientIpAddress) + ' :: ' + Clients^.ClientName));
+                if CompareText(AClient, Clients^.ClientName) = 0 then
+                begin
+                  AInfo^.ServerName := string(Clients^.OwnerHost.HostName);
+                  AInfo^.ServerNetBIOSName := string(Clients^.OwnerHost.NetBiosName);
+                  AInfo^.ServerAddress := DecodeIP(Clients^.OwnerHost.IpAddress{srvArr.Servers[i].ServerAddress});
+                  AInfo^.HardwareAddress := Format(
+                    '%.2x-%.2x-%.2x-%.2x-%.2x-%.2x',
+                    [
+                       Clients^.ClientHardwareAddress.Data[0],
+                       Clients^.ClientHardwareAddress.Data[1],
+                       Clients^.ClientHardwareAddress.Data[2],
+                       Clients^.ClientHardwareAddress.Data[3],
+                       Clients^.ClientHardwareAddress.Data[4],
+                       Clients^.ClientHardwareAddress.Data[5]
+                    ]
+                  );
+
+                  AInfo^.IPAddress.FQDN := string(Clients^.ClientName);
+                  AInfo^.IPAddress.v4 := DecodeIP(Clients^.ClientIpAddress);
+                  AInfo^.SubnetMask := DecodeIP(Clients^.SubnetMask);
+                  AInfo^.LeaseExpires := ADDateToDateTime(Clients^.ClientLeaseExpires);
+                  bFound := True;
+                  Break;
+                end;
+
+                Inc(Clients);
+                Inc(iClients);
+              end;
+            end;
+
+            if bFound then Break;
+
+            Inc(Subnets);
+            Inc(iSubnets);
+          until retClients <> ERROR_MORE_DATA;
+
+          if bFound then Break;
+        end;
+      end;
+      DhcpRpcFreeMemory(aSubnets);
+      if bFound then Break;
+    until retSubnets <> 0;
+
+    if bFound then Break;
   end;
 end;
 
@@ -1608,7 +1740,7 @@ begin
   end;
 end;
 
-procedure FreeDHCPClientInfoMemory(pClientInfo: LPDHCP_CLIENT_INFO);
+procedure FreeDHCPClientInfoMemory(pClientInfo: PDHCP_CLIENT_INFO);
 begin
   if Assigned(pClientInfo) then
   begin

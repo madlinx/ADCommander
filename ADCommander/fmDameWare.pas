@@ -85,7 +85,8 @@ begin
 //      if Pos('.', infoIP^.FQDN) > 0
 //        then fqdn := infoIP^.FQDN
 //        else fqdn := AValue;
-//      GetDHCPInfo(LowerCase(fqdn), infoDHCP);
+////      GetDHCPInfo(LowerCase(fqdn), infoDHCP);
+//      GetDHCPInfoEx(LowerCase(fqdn), infoDHCP);
 //      if not (infoIP^.v4.IsEmpty and infoDHCP.IPAddress.v4.IsEmpty) then
 //      begin
 //        ComboBox_Computer.Items.Insert(
@@ -140,7 +141,8 @@ begin
   New(infoIP);
   New(infoDHCP);
   GetIPAddress(pcName, infoIP);
-  GetDHCPInfo(pcName, infoDHCP);
+//  GetDHCPInfo(pcName, infoDHCP);
+  GetDHCPInfoEx(pcName, infoDHCP);
 
   ComboBox_Computer.Text := IfThen(
     infoIP^.v4.IsEmpty,
@@ -414,7 +416,8 @@ begin
         New(infoIP);
         New(infoDHCP);
         GetIPAddress(FObj.dNSHostName, infoIP);
-        GetDHCPInfo(FObj.dNSHostName, infoDHCP);
+//        GetDHCPInfo(FObj.dNSHostName, infoDHCP);
+        GetDHCPInfoEx(FObj.dNSHostName, infoDHCP);
 
         if not infoIP^.v4.IsEmpty
           then ComboBox_Computer.Items.Add(infoIP^.v4)

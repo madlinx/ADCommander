@@ -33,7 +33,11 @@ type
 
 type
   DHCP_IP_ADDRESS = DWORD;
+  PDHCP_IP_ADDRESS = ^DHCP_IP_ADDRESS;
+  LPDHCP_IP_ADDRESS = ^PDHCP_IP_ADDRESS;
+
   DHCP_IP_MASK = DWORD;
+  DHCP_RESUME_HANDLE = DWORD;
 
 {$MINENUMSIZE 4}
 type
@@ -136,7 +140,8 @@ type
     OwnerHost             : DHCP_HOST_INFO;
   end;
   DHCP_CLIENT_INFO = _DHCP_CLIENT_INFO;
-  LPDHCP_CLIENT_INFO = ^DHCP_CLIENT_INFO;
+  PDHCP_CLIENT_INFO = ^DHCP_CLIENT_INFO;
+  LPDHCP_CLIENT_INFO = ^PDHCP_CLIENT_INFO;
 
 type
   _DHCPV4_FAILOVER_CLIENT_INFO = record
@@ -185,8 +190,24 @@ type
   DHCP_CLIENT_INFO_PB = _DHCP_CLIENT_INFO_PB;
   LPDHCP_CLIENT_INFO_PB = ^DHCP_CLIENT_INFO_PB;
 
+type
+  _DHCP_IP_ARRAY = record
+    NumElements: DWORD;
+    Elements: LPDHCP_IP_ADDRESS;
+  end;
+  DHCP_IP_ARRAY = _DHCP_IP_ARRAY;
+  LPDHCP_IP_ARRAY = ^DHCP_IP_ARRAY;
+
+type
+  _DHCP_CLIENT_INFO_ARRAY = record
+    NumElements: DWORD;
+    Clients: LPDHCP_CLIENT_INFO;
+  end;
+  DHCP_CLIENT_INFO_ARRAY = _DHCP_CLIENT_INFO_ARRAY;
+  LPDHCP_CLIENT_INFO_ARRAY = ^DHCP_CLIENT_INFO_ARRAY;
+
   TDhcpGetClientInfo = function(ServerIpAddress: PWideChar; SearchInfo: LPDHCP_SEARCH_INFO;
-    ClientInfo: LPDHCP_CLIENT_INFO): DWORD; stdcall;
+    ClientInfo: PDHCP_CLIENT_INFO): DWORD; stdcall;
   TDhcpV4GetClientInfo = function(ServerIpAddress: PWideChar;
     SearchInfo: LPDHCP_SEARCH_INFO; ClientInfo: LPDHCP_CLIENT_INFO_PB): DWORD; stdcall;
   TDhcpV4FailoverGetClientInfo = function(ServerIpAddress: PWideChar;
@@ -195,6 +216,12 @@ type
 
 function DhcpEnumServers(Flags: DWORD; IdInfo: LPVOID; Servers: LPDHCP_SERVER_INFO_ARRAY;
   CallbackFn: LPVOID; CallbackData: LPVOID): DWORD; stdcall;
+function DhcpEnumSubnets(ServerIpAddress: PWideChar; var ResumeHandle: DHCP_RESUME_HANDLE;
+  PreferredMaximum: DWORD; EnumInfo: LPDHCP_IP_ARRAY; out ElementsRead, ElementsTotal: DWORD): DWORD; stdcall;
+function DhcpEnumSubnetClients(ServerIpAddress: PWideChar; SubnetAddress: DHCP_IP_ADDRESS;
+  var ResumeHandle: DHCP_RESUME_HANDLE; PreferredMaximum: DWORD; ClientInfo: LPDHCP_CLIENT_INFO_ARRAY;
+  out ClientsRead, ClientsTotal: DWORD): DWORD; stdcall;
+
 //function DhcpGetClientInfo(ServerIpAddress: PWideChar; SearchInfo: LPDHCP_SEARCH_INFO;
 //  ClientInfo: LPDHCP_CLIENT_INFO): DWORD; stdcall;
 //function DhcpV4GetClientInfo(ServerIpAddress: PWideChar;
@@ -210,6 +237,8 @@ procedure freeaddrinfo(ai: PADDRINFO); stdcall;
 implementation
 
 function DhcpEnumServers; external 'dhcpsapi.dll' name 'DhcpEnumServers';
+function DhcpEnumSubnets; external 'dhcpsapi.dll' name 'DhcpEnumSubnets';
+function DhcpEnumSubnetClients; external 'dhcpsapi.dll' name 'DhcpEnumSubnetClients';
 //function DhcpGetClientInfo; external 'dhcpsapi.dll' name 'DhcpGetClientInfo';
 //function DhcpV4GetClientInfo; external 'dhcpsapi.dll' name 'DhcpV4GetClientInfo';
 //function DhcpV4FailoverGetClientInfo; external 'dhcpsapi.dll' name 'DhcpV4FailoverGetClientInfo';

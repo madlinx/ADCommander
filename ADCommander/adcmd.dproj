@@ -128,19 +128,19 @@
         <DCC_DebugInfoInExe>false</DCC_DebugInfoInExe>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
-        <VerInfo_Keys>CompanyName=JSC Mozyr Oil Refinery;FileDescription=Active Directory® Commander;FileVersion=1.0.0.1809;InternalName=adcommander;LegalCopyright=Copyright © 2018, JSC Mozyr Oil Refinery;LegalTrademarks=Madlinx™;OriginalFilename=adcmd.exe;ProductName=Active Directory® Commander;ProductVersion=1.0.0;Comments=Compiled by Alexander Zhigadlo;ProgramID=com.npz.$(MSBuildProjectName)</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=JSC Mozyr Oil Refinery;FileDescription=Active Directory® Commander;FileVersion=1.0.0.1812;InternalName=adcommander;LegalCopyright=Copyright © 2018, JSC Mozyr Oil Refinery;LegalTrademarks=Madlinx™;OriginalFilename=adcmd.exe;ProductName=Active Directory® Commander;ProductVersion=1.0.0;Comments=Compiled by Alexander Zhigadlo;ProgramID=com.npz.$(MSBuildProjectName)</VerInfo_Keys>
         <Icon_MainIcon>adac_Icon.ico</Icon_MainIcon>
         <AppEnableHighDPI>true</AppEnableHighDPI>
         <BT_BuildType>Debug</BT_BuildType>
         <VerInfo_MinorVer>0</VerInfo_MinorVer>
         <DCC_DcuOutput>.\..\$(Platform)\$(Config)\Units</DCC_DcuOutput>
         <DCC_ExeOutput>.\..\$(Platform)\$(Config)</DCC_ExeOutput>
-        <VerInfo_Build>1809</VerInfo_Build>
+        <VerInfo_Build>1812</VerInfo_Build>
         <VerInfo_MajorVer>1</VerInfo_MajorVer>
         <VerInfo_Release>0</VerInfo_Release>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win64)'!=''">
-        <VerInfo_Keys>CompanyName=JSC Mozyr Oil Refinery;FileDescription=Active Directory® Commander;FileVersion=1.0.0.1809;InternalName=adcommander;LegalCopyright=Copyright © 2018, JSC Mozyr Oil Refinery;LegalTrademarks=Madlinx™;OriginalFilename=adcmd.exe;ProductName=Active Directory® Commander;ProductVersion=1.0.0;Comments=Compiled by Alexander Zhigadlo;ProgramID=com.npz.$(MSBuildProjectName)</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=JSC Mozyr Oil Refinery;FileDescription=Active Directory® Commander;FileVersion=1.0.0.1812;InternalName=adcommander;LegalCopyright=Copyright © 2018, JSC Mozyr Oil Refinery;LegalTrademarks=Madlinx™;OriginalFilename=adcmd.exe;ProductName=Active Directory® Commander;ProductVersion=1.0.0;Comments=Compiled by Alexander Zhigadlo;ProgramID=com.npz.$(MSBuildProjectName)</VerInfo_Keys>
         <Icon_MainIcon>adac_Icon.ico</Icon_MainIcon>
         <AppEnableHighDPI>true</AppEnableHighDPI>
         <BT_BuildType>Debug</BT_BuildType>
@@ -148,7 +148,7 @@
         <Debugger_RunParams>-autorun</Debugger_RunParams>
         <DCC_DcuOutput>.\..\$(Platform)\$(Config)\Units</DCC_DcuOutput>
         <DCC_ExeOutput>.\..\$(Platform)\$(Config)</DCC_ExeOutput>
-        <VerInfo_Build>1809</VerInfo_Build>
+        <VerInfo_Build>1812</VerInfo_Build>
         <VerInfo_MajorVer>1</VerInfo_MajorVer>
         <VerInfo_Release>0</VerInfo_Release>
     </PropertyGroup>

@@ -345,7 +345,8 @@ begin
   if not Self.dNSHostName.IsEmpty then
   begin
     GetIPAddress(Self.dNSHostName, infoIP);
-    GetDHCPInfo(Self.dNSHostName, infoDHCP);
+//    GetDHCPInfo(Self.dNSHostName, infoDHCP);
+    GetDHCPInfoEx(Self.dNSHostName, infoDHCP);
   end;
 
   IPv4 := IfThen(
