@@ -2073,9 +2073,6 @@ begin
 //            FInPlaceEdit.SetBounds(R.Left, R.Top, R.Right - R.Left, R.Bottom - R.Top);
 //            FInPlaceEdit.Text := ListView_Accounts.Items[HitInfo.iItem].Caption;
 //            FInPlaceEdit.ItemIndex := HitInfo.iItem;
-
-            ListView_GetItemRect(ListView_Accounts.Handle, HitInfo.iItem, R, LVIR_LABEL);
-            ShowMessage(IntToStr(List_Obj[HitInfo.iItem].systemFlags));
           end;
           if not string(FInPlaceEdit.Text).IsEmpty then
           begin
