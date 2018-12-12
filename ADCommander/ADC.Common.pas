@@ -1616,7 +1616,6 @@ begin
               iClients := 0;
               while iClients < ClientCount do
               begin
-                OutputDebugString(PChar(DecodeIP(Clients^.ClientIpAddress) + ' :: ' + Clients^.ClientName));
                 if CompareText(AClient, Clients^.ClientName) = 0 then
                 begin
                   AInfo^.ServerName := string(Clients^.OwnerHost.HostName);
@@ -1638,6 +1637,7 @@ begin
                   AInfo^.IPAddress.v4 := DecodeIP(Clients^.ClientIpAddress);
                   AInfo^.SubnetMask := DecodeIP(Clients^.SubnetMask);
                   AInfo^.LeaseExpires := ADDateToDateTime(Clients^.ClientLeaseExpires);
+//                  GetDHCPInfo(Clients^.ClientName, AInfo);
                   bFound := True;
                   Break;
                 end;
